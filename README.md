@@ -75,9 +75,9 @@
 - Soporte para modelo Flotilleros/Drivers
 
 ### Inteligencia Artificial
-- Google Gemini 2.5 Flash para extraccion de datos
+- OpenAI GPT-4o para extraccion de datos
 - Procesamiento de XML estructurado
-- OCR de facturas en PDF
+- Vision para analisis de PDFs
 - Deteccion automatica de proyecto
 
 ---
@@ -205,7 +205,7 @@ El sistema soporta dos tipos de facturadores:
 ### Servicios
 | Servicio | Uso |
 |----------|-----|
-| Google Gemini | Extraccion de datos con IA |
+| OpenAI GPT-4o | Extraccion de datos con IA |
 | Supabase | Base de datos PostgreSQL |
 | Google Drive | Almacenamiento de archivos |
 | Vercel | Hosting y Functions |
@@ -272,8 +272,8 @@ GOOGLE_DRIVE_ROOT_FOLDER_ID=1AbCdEfGhIjKlMnOp
 # Configuracion
 EXPECTED_RECEIVER_RFC=BLI180227F23
 
-# Gemini AI
-GEMINI_API_KEY=AIzaSy...
+# OpenAI (para extraccion de datos)
+VITE_OPENAI_API_KEY=sk-...
 ```
 
 ### Configuracion detallada
@@ -389,7 +389,7 @@ sube-tu-factura/
 │   │   ├── useProjects.ts        # Hook para proyectos
 │   │   └── useWeekOptions.ts     # Opciones de semanas
 │   ├── services/
-│   │   ├── geminiService.ts      # Integracion Gemini AI
+│   │   ├── openaiService.ts      # Integracion OpenAI GPT-4o
 │   │   └── webhookService.ts     # Comunicacion con API
 │   ├── types/
 │   │   └── invoice.ts            # Tipos de factura

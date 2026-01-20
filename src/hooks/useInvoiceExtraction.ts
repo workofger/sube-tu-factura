@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { InvoiceData } from '../types/invoice';
-import { extractInvoiceData } from '../services/geminiService';
+import { extractInvoiceData } from '../services/openaiService';
 import { CONFIG } from '../constants/config';
 
 interface UseInvoiceExtractionProps {
