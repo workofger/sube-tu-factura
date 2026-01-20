@@ -89,15 +89,16 @@ Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
       });
     }
 
-    // Agregar el PDF como imagen si está disponible
-    if (pdfBase64) {
+    // Agregar el PDF como archivo si está disponible
+    // OpenAI Vision soporta PDFs usando el tipo 'file' con file_data
+    if (pdfBase64 && pdfFile) {
       userContent.push({
-        type: 'image_url',
-        image_url: {
-          url: `data:application/pdf;base64,${pdfBase64}`,
-          detail: 'high'
+        type: 'file',
+        file: {
+          filename: pdfFile.name,
+          file_data: `data:application/pdf;base64,${pdfBase64}`
         }
-      });
+      } as OpenAI.Chat.ChatCompletionContentPart);
     }
 
     // Agregar instrucción final
