@@ -24,8 +24,8 @@ import {
 import { validateMatchingFilenames } from './utils/xmlParser';
 
 const App: React.FC = () => {
-  // Alert state
-  const [alert, setAlert] = useState<{
+  // Alert modal state (renamed to avoid conflict with window.alert)
+  const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
     type: AlertType;
     title: string;
@@ -60,7 +60,7 @@ const App: React.FC = () => {
 
   // Handle validation alerts from extraction
   const handleValidationAlert = useCallback((validationAlert: ValidationAlert) => {
-    setAlert({
+    setAlertModal({
       isOpen: true,
       type: validationAlert.type as AlertType,
       title: validationAlert.title,
@@ -86,8 +86,8 @@ const App: React.FC = () => {
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Close alert handler
-  const closeAlert = useCallback(() => {
-    setAlert(prev => ({ ...prev, isOpen: false }));
+  const closeAlertModal = useCallback(() => {
+    setAlertModal(prev => ({ ...prev, isOpen: false }));
   }, []);
 
   // Set initial week when loaded
@@ -271,12 +271,12 @@ const App: React.FC = () => {
 
       {/* Validation Alert Popup */}
       <AlertPopup
-        isOpen={alert.isOpen}
-        onClose={closeAlert}
-        type={alert.type}
-        title={alert.title}
-        message={alert.message}
-        details={alert.details}
+        isOpen={alertModal.isOpen}
+        onClose={closeAlertModal}
+        type={alertModal.type}
+        title={alertModal.title}
+        message={alertModal.message}
+        details={alertModal.details}
       />
     </div>
   );
