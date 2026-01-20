@@ -123,7 +123,7 @@ export interface ExtractionResult {
 export interface WebhookPayload {
   // Metadata
   submittedAt: string;
-  week: string;
+  week: number;
   project: string;
   
   // Issuer (Emisor)
