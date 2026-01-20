@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { InvoiceData, ExtractionResult } from '../types/invoice';
+import { InvoiceData } from '../types/invoice';
 import { extractInvoiceData } from '../services/geminiService';
 import { CONFIG } from '../constants/config';
 

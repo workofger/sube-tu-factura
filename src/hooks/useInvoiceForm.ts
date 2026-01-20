@@ -86,10 +86,14 @@ export const useInvoiceForm = () => {
   const itemsTotal = formData.items.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
   // Check if retentions should be shown
-  const showRetentionIva = (formData.retentionIva && parseFloat(formData.retentionIva) > 0) || 
-                          (formData.retentionIvaRate && formData.retentionIvaRate > 0);
-  const showRetentionIsr = (formData.retentionIsr && parseFloat(formData.retentionIsr) > 0) || 
-                          (formData.retentionIsrRate && formData.retentionIsrRate > 0);
+  const showRetentionIva = Boolean(
+    (formData.retentionIva && parseFloat(formData.retentionIva) > 0) || 
+    (formData.retentionIvaRate && formData.retentionIvaRate > 0)
+  );
+  const showRetentionIsr = Boolean(
+    (formData.retentionIsr && parseFloat(formData.retentionIsr) > 0) || 
+    (formData.retentionIsrRate && formData.retentionIsrRate > 0)
+  );
 
   return {
     formData,
