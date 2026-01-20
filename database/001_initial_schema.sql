@@ -61,17 +61,34 @@ CREATE TABLE projects (
     code VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    color VARCHAR(7) DEFAULT '#6B7280',  -- Color hex para UI
+    icon VARCHAR(50),                     -- Nombre de icono (opcional)
     is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-INSERT INTO projects (code, name) VALUES
-    ('MERCADO_LIBRE', 'Mercado Libre'),
-    ('AMAZON', 'Amazon'),
-    ('WALMART', 'Walmart'),
-    ('SHOPIFY', 'Shopify'),
-    ('OTHER', 'Otro');
+-- Proyectos iniciales
+INSERT INTO projects (code, name, description, color, sort_order) VALUES
+    ('MERCADO_LIBRE', 'Mercado Libre', 'Entregas de Mercado Libre y Mercado Envíos', '#FFE600', 1),
+    ('AMAZON', 'Amazon', 'Entregas de Amazon Logistics', '#FF9900', 2),
+    ('RAPPI', 'Rappi', 'Entregas de Rappi y RappiCargo', '#FF441F', 3),
+    ('DINAMICA_FILMICA', 'Dinámica Fílmica', 'Servicios de producción audiovisual', '#8B5CF6', 4),
+    ('HOME_DEPOT', 'Home Depot', 'Entregas de Home Depot México', '#F97316', 5),
+    ('WALMART', 'Walmart', 'Entregas de Walmart y Walmart Express', '#0071DC', 6),
+    ('COPPEL', 'Coppel', 'Entregas de Coppel y Afore Coppel', '#FFD700', 7),
+    ('LIVERPOOL', 'Liverpool', 'Entregas de Liverpool y Fábricas de Francia', '#E91E8C', 8),
+    ('ESTAFETA', 'Estafeta', 'Servicios de paquetería Estafeta', '#00A651', 9),
+    ('DHL', 'DHL', 'Servicios de paquetería DHL', '#D40511', 10),
+    ('FEDEX', 'FedEx', 'Servicios de paquetería FedEx', '#4D148C', 11),
+    ('UPS', 'UPS', 'Servicios de paquetería UPS', '#351C15', 12),
+    ('PAQUETEXPRESS', 'Paquetexpress', 'Servicios de paquetería Paquetexpress', '#0033A0', 13),
+    ('UBER_EATS', 'Uber Eats', 'Entregas de Uber Eats', '#000000', 14),
+    ('DIDI_FOOD', 'DiDi Food', 'Entregas de DiDi Food', '#FF7A00', 15),
+    ('CORNERSHOP', 'Cornershop', 'Entregas de Cornershop by Uber', '#FF4B4B', 16),
+    ('JOKR', 'JOKR', 'Entregas de JOKR', '#00D4AA', 17),
+    ('OTROS', 'Otros', 'Otros proyectos y clientes', '#6B7280', 99);
 
 -- Regímenes Fiscales
 CREATE TABLE fiscal_regimes (

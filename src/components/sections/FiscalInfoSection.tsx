@@ -1,24 +1,25 @@
 import React from 'react';
 import { User, ShieldCheck, Calendar, Hash, AlertTriangle } from 'lucide-react';
-import { InputField, SelectField } from '../common';
-import { InvoiceData, ProjectType } from '../../types/invoice';
+import { InputField, SelectField, ProjectSelect } from '../common';
+import { InvoiceData } from '../../types/invoice';
 import { CONFIG } from '../../constants/config';
+import { Project } from '../../hooks/useProjects';
 
 interface FiscalInfoSectionProps {
   formData: InvoiceData;
   weekOptions: { value: string; label: string }[];
+  projects: Project[];
+  projectsLoading?: boolean;
   onFieldChange: <K extends keyof InvoiceData>(field: K, value: InvoiceData[K]) => void;
 }
 
 export const FiscalInfoSection: React.FC<FiscalInfoSectionProps> = ({
   formData,
   weekOptions,
+  projects,
+  projectsLoading = false,
   onFieldChange,
 }) => {
-  const projectOptions = Object.values(ProjectType).map((val) => ({
-    value: val,
-    label: val,
-  }));
 
   const rfcMismatch = formData.receiverRfc && formData.receiverRfc !== CONFIG.EXPECTED_RECEIVER_RFC;
 
@@ -113,11 +114,11 @@ export const FiscalInfoSection: React.FC<FiscalInfoSectionProps> = ({
           value={formData.week}
           onChange={(e) => onFieldChange('week', e.target.value)}
         />
-        <SelectField
-          label="Proyecto"
-          options={projectOptions}
+        <ProjectSelect
+          projects={projects}
           value={formData.project}
-          onChange={(e) => onFieldChange('project', e.target.value)}
+          onChange={(value) => onFieldChange('project', value)}
+          loading={projectsLoading}
         />
       </div>
 

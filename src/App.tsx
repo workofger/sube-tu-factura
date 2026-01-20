@@ -5,6 +5,7 @@ import { Loader2, Mail, ShieldCheck, CheckSquare } from 'lucide-react';
 import { useWeekOptions } from './hooks/useWeekOptions';
 import { useInvoiceForm } from './hooks/useInvoiceForm';
 import { useInvoiceExtraction } from './hooks/useInvoiceExtraction';
+import { useProjects } from './hooks/useProjects';
 
 // Services
 import { submitInvoice, validateFormData } from './services/webhookService';
@@ -21,6 +22,7 @@ import {
 const App: React.FC = () => {
   // Hooks
   const { weekOptions, currentWeek } = useWeekOptions();
+  const { projects, loading: projectsLoading } = useProjects();
   const { 
     formData, 
     setFormData, 
@@ -125,6 +127,8 @@ const App: React.FC = () => {
               <FiscalInfoSection
                 formData={formData}
                 weekOptions={weekOptions}
+                projects={projects}
+                projectsLoading={projectsLoading}
                 onFieldChange={updateField}
               />
 
