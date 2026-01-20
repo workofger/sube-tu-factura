@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, Mail, ShieldCheck, CheckSquare } from 'lucide-react';
 
 // Hooks
 import { useWeekOptions } from './hooks/useWeekOptions';
 import { useInvoiceForm } from './hooks/useInvoiceForm';
-import { useInvoiceExtraction } from './hooks/useInvoiceExtraction';
+import { useInvoiceExtraction, ValidationAlert } from './hooks/useInvoiceExtraction';
 import { useProjects } from './hooks/useProjects';
 
 // Services
@@ -12,6 +12,7 @@ import { submitInvoice, validateFormData } from './services/webhookService';
 
 // Components
 import { Header, WhatsAppButton } from './components/layout';
+import { AlertPopup, AlertType } from './components/common';
 import { 
   FileUploadSection, 
   FiscalInfoSection, 
@@ -19,7 +20,27 @@ import {
   ItemsTable 
 } from './components/sections';
 
+// Validation utilities
+import { validateMatchingFilenames } from './utils/xmlParser';
+
 const App: React.FC = () => {
+  // Alert state
+  const [alert, setAlert] = useState<{
+    isOpen: boolean;
+    type: AlertType;
+    title: string;
+    message: string;
+    details?: string;
+  }>({
+    isOpen: false,
+    type: 'error',
+    title: '',
+    message: '',
+  });
+
+  // Filename error state
+  const [filenameError, setFilenameError] = useState<string | null>(null);
+
   // Hooks
   const { weekOptions, currentWeek } = useWeekOptions();
   const { projects, loading: projectsLoading } = useProjects();
@@ -37,15 +58,37 @@ const App: React.FC = () => {
     showRetentionIsr,
   } = useInvoiceForm();
 
+  // Handle validation alerts from extraction
+  const handleValidationAlert = useCallback((validationAlert: ValidationAlert) => {
+    setAlert({
+      isOpen: true,
+      type: validationAlert.type as AlertType,
+      title: validationAlert.title,
+      message: validationAlert.message,
+      details: validationAlert.details,
+    });
+  }, []);
+
   const {
     isExtracting,
+    isValidating,
     extractError,
     extractSuccess,
     handleExtraction,
-  } = useInvoiceExtraction({ formData, setFormData });
+  } = useInvoiceExtraction({ 
+    formData, 
+    setFormData, 
+    projects,
+    onValidationAlert: handleValidationAlert 
+  });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Close alert handler
+  const closeAlert = useCallback(() => {
+    setAlert(prev => ({ ...prev, isOpen: false }));
+  }, []);
 
   // Set initial week when loaded
   useEffect(() => {
@@ -54,12 +97,22 @@ const App: React.FC = () => {
     }
   }, [currentWeek, formData.week, setWeek]);
 
-  // Auto-extraction effect when both files are uploaded
+  // Validate filenames match when both files are uploaded
   useEffect(() => {
-    if (formData.xmlFile && formData.pdfFile && !isExtracting && !extractSuccess) {
+    if (formData.xmlFile && formData.pdfFile) {
+      const validation = validateMatchingFilenames(formData.xmlFile, formData.pdfFile);
+      setFilenameError(validation.valid ? null : validation.error || null);
+    } else {
+      setFilenameError(null);
+    }
+  }, [formData.xmlFile, formData.pdfFile]);
+
+  // Auto-extraction effect when both files are uploaded and filenames match
+  useEffect(() => {
+    if (formData.xmlFile && formData.pdfFile && !isExtracting && !isValidating && !extractSuccess && !filenameError) {
       handleExtraction();
     }
-  }, [formData.xmlFile, formData.pdfFile, isExtracting, extractSuccess, handleExtraction]);
+  }, [formData.xmlFile, formData.pdfFile, isExtracting, isValidating, extractSuccess, filenameError, handleExtraction]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,9 +168,10 @@ const App: React.FC = () => {
             <FileUploadSection
               formData={formData}
               onFileChange={(field, file) => updateField(field, file)}
-              isExtracting={isExtracting}
+              isExtracting={isExtracting || isValidating}
               extractSuccess={extractSuccess}
               extractError={extractError}
+              filenameError={filenameError}
             />
 
             {/* STEP 2 & 3: Validation Grid */}
@@ -214,6 +268,16 @@ const App: React.FC = () => {
 
       {/* WhatsApp FAB */}
       <WhatsAppButton />
+
+      {/* Validation Alert Popup */}
+      <AlertPopup
+        isOpen={alert.isOpen}
+        onClose={closeAlert}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        details={alert.details}
+      />
     </div>
   );
 };

@@ -1,7 +1,8 @@
-import React from 'react';
-import { Sparkles, Loader2, AlertTriangle } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Sparkles, Loader2, AlertTriangle, FileWarning } from 'lucide-react';
 import { FileUpload } from '../common';
 import { InvoiceData } from '../../types/invoice';
+import { validateMatchingFilenames } from '../../utils/xmlParser';
 
 interface FileUploadSectionProps {
   formData: InvoiceData;
@@ -9,6 +10,7 @@ interface FileUploadSectionProps {
   isExtracting: boolean;
   extractSuccess: boolean;
   extractError: string | null;
+  filenameError?: string | null;
 }
 
 export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
@@ -17,7 +19,15 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   isExtracting,
   extractSuccess,
   extractError,
+  filenameError,
 }) => {
+  // Validate filename matching
+  const filenameValidation = useMemo(() => {
+    return validateMatchingFilenames(formData.xmlFile, formData.pdfFile);
+  }, [formData.xmlFile, formData.pdfFile]);
+
+  const displayError = filenameError || (!filenameValidation.valid ? filenameValidation.error : null);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
@@ -44,6 +54,14 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
             iconType="pdf"
           />
         </div>
+
+        {/* Filename mismatch error */}
+        {displayError && (
+          <div className="flex items-center gap-2 text-orange-600 bg-orange-50 px-4 py-3 rounded-xl border border-orange-200 text-sm">
+            <FileWarning size={18} className="flex-shrink-0" />
+            <span className="font-medium">{displayError}</span>
+          </div>
+        )}
 
         <div className="flex items-center justify-center min-h-[40px]">
           {isExtracting ? (
