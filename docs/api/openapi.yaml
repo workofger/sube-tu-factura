@@ -2,15 +2,20 @@ openapi: 3.0.3
 info:
   title: FacturaFlow API
   description: |
-    API para gestión de facturas CFDI.
+    API para gestion de facturas CFDI v2.0.
     
     Esta API permite:
     - Registrar facturas con archivos XML/PDF
     - Validar si un UUID ya existe
+    - Obtener lista de proyectos
     - Verificar el estado de los servicios
     
-    Los archivos se almacenan automáticamente en Google Drive con estructura organizada por semana, proyecto y facturador.
-  version: 1.0.0
+    **Novedades v2.0:**
+    - Soporte para modelo Flotilleros/Drivers
+    - Un flotillero puede tener multiples drivers
+    - Un driver independiente es un flotillero de tipo 'independiente'
+    - Los archivos se almacenan automaticamente en Google Drive con estructura organizada por semana, proyecto y facturador
+  version: 2.0.0
   contact:
     name: PartRunner Support
     email: soporte@partrunner.com
@@ -18,13 +23,15 @@ info:
 
 servers:
   - url: https://sube-tu-factura.vercel.app/api
-    description: Producción
+    description: Produccion
   - url: http://localhost:3000/api
     description: Desarrollo local
 
 tags:
   - name: Invoices
     description: Operaciones con facturas
+  - name: Projects
+    description: Catalogo de proyectos
   - name: Health
     description: Estado del sistema
 
@@ -34,7 +41,17 @@ paths:
       tags:
         - Invoices
       summary: Registrar factura
-      description: Procesa y registra una factura CFDI completa con archivos
+      description: |
+        Procesa y registra una factura CFDI completa con archivos.
+        
+        El proceso:
+        1. Valida los datos de entrada
+        2. Verifica que el UUID no exista (duplicado)
+        3. Crea/actualiza el flotillero (facturador)
+        4. Crea/actualiza el driver asociado
+        5. Guarda la factura con relaciones
+        6. Sube archivos a Google Drive
+        7. Actualiza referencias de archivos en BD
       operationId: createInvoice
       requestBody:
         required: true
@@ -47,7 +64,7 @@ paths:
               project: "MERCADO LIBRE"
               issuer:
                 rfc: "XAXX010101000"
-                name: "Juan Pérez García"
+                name: "Juan Perez Garcia"
                 regime: "626"
                 zipCode: "06600"
               receiver:
@@ -86,7 +103,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InvoiceSuccessResponse'
         '400':
-          description: Error de validación
+          description: Error de validacion
           content:
             application/json:
               schema:
@@ -126,24 +143,45 @@ paths:
                   example: "3FA85F64-5717-4562-B3FC-2C963F66AFA6"
       responses:
         '200':
-          description: Resultado de validación
+          description: Resultado de validacion
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidateResponse'
         '400':
-          description: UUID inválido
+          description: UUID invalido
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: Obtener proyectos
+      description: Retorna la lista de proyectos activos ordenados por sort_order
+      operationId: getProjects
+      responses:
+        '200':
+          description: Lista de proyectos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectsResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalErrorResponse'
 
   /health:
     get:
       tags:
         - Health
       summary: Estado del sistema
-      description: Verifica la conexión con Supabase y Google Drive
+      description: Verifica la conexion con Supabase y Google Drive
       operationId: getHealth
       responses:
         '200':
@@ -184,11 +222,11 @@ components:
           type: integer
           minimum: 1
           maximum: 53
-          description: Número de semana
+          description: Numero de semana
         project:
           type: string
-          enum: [MERCADO LIBRE, AMAZON, WALMART, SHOPIFY, OTRO]
-          description: Proyecto asociado
+          description: Nombre o codigo del proyecto
+          example: "MERCADO LIBRE"
         issuer:
           $ref: '#/components/schemas/IssuerData'
         receiver:
@@ -210,26 +248,34 @@ components:
 
     IssuerData:
       type: object
+      description: |
+        Datos del emisor (quien factura).
+        Se usa para crear/actualizar el flotillero y driver asociado.
       required:
         - rfc
         - name
       properties:
         rfc:
           type: string
-          pattern: '^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$'
+          pattern: '^[A-ZN&]{3,4}\d{6}[A-Z0-9]{3}$'
           example: "XAXX010101000"
+          description: RFC del emisor (12-13 caracteres)
         name:
           type: string
-          example: "Juan Pérez García"
+          example: "Juan Perez Garcia"
+          description: Nombre o razon social
         regime:
           type: string
           example: "626"
+          description: Codigo de regimen fiscal SAT
         zipCode:
           type: string
           example: "06600"
+          description: Codigo postal fiscal
 
     ReceiverData:
       type: object
+      description: Datos del receptor (empresa que recibe la factura)
       required:
         - rfc
       properties:
@@ -255,6 +301,7 @@ components:
         uuid:
           type: string
           format: uuid
+          description: Folio fiscal unico (36 caracteres)
         folio:
           type: string
         series:
@@ -276,9 +323,11 @@ components:
         method:
           type: string
           enum: [PUE, PPD]
+          description: PUE = Pago en Una Exhibicion, PPD = Pago en Parcialidades
         form:
           type: string
           example: "03"
+          description: Codigo de forma de pago SAT
         conditions:
           type: string
 
@@ -292,6 +341,7 @@ components:
           type: number
         totalTax:
           type: number
+          description: IVA trasladado
         retentionIva:
           type: number
         retentionIvaRate:
@@ -329,8 +379,10 @@ components:
           type: number
         productKey:
           type: string
+          description: ClaveProdServ SAT
         taxObject:
           type: string
+          description: ObjetoImp SAT
 
     ContactData:
       type: object
@@ -365,6 +417,8 @@ components:
         mimeType:
           type: string
 
+    # Response Schemas
+    
     InvoiceSuccessResponse:
       type: object
       properties:
@@ -373,7 +427,7 @@ components:
           example: true
         message:
           type: string
-          example: "¡Factura registrada exitosamente!"
+          example: "Factura registrada exitosamente!"
         data:
           type: object
           properties:
@@ -383,6 +437,14 @@ components:
             uuid:
               type: string
               format: uuid
+            billerId:
+              type: string
+              format: uuid
+              description: ID del flotillero/facturador
+            driverId:
+              type: string
+              format: uuid
+              description: ID del driver asociado
             driveFolderPath:
               type: string
             files:
@@ -406,7 +468,7 @@ components:
           example: "VALIDATION_ERROR"
         message:
           type: string
-          example: "Datos inválidos"
+          example: "Datos invalidos"
         details:
           type: array
           items:
@@ -457,6 +519,41 @@ components:
         existingInvoiceId:
           type: string
           format: uuid
+
+    ProjectsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: "MERCADO_LIBRE"
+        name:
+          type: string
+          example: "Mercado Libre"
+        color:
+          type: string
+          example: "#FFE600"
+        icon:
+          type: string
+          nullable: true
+        sort_order:
+          type: integer
+          example: 1
+        is_active:
+          type: boolean
 
     HealthResponse:
       type: object

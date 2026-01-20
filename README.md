@@ -2,82 +2,87 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)
 
-**Sistema inteligente de gestión de facturas CFDI con extracción automática mediante IA**
+**Sistema inteligente de gestion de facturas CFDI con extraccion automatica mediante IA**
 
-[Demo](https://sube-tu-factura.vercel.app) · [Documentación API](docs/api/README.md) · [Reportar Bug](https://github.com/workofger/sube-tu-factura/issues)
+[Demo](https://sube-tu-factura.vercel.app) · [Documentacion API](docs/api/README.md) · [Reportar Bug](https://github.com/workofger/sube-tu-factura/issues)
 
 </div>
 
 ---
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
-- [Descripción](#-descripción)
-- [Características](#-características)
-- [Arquitectura](#-arquitectura)
-- [Tecnologías](#-tecnologías)
-- [Instalación](#-instalación)
-- [Configuración](#-configuración)
-- [Uso](#-uso)
-- [API Reference](#-api-reference)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Base de Datos](#-base-de-datos)
-- [Google Drive](#-google-drive)
-- [Despliegue](#-despliegue)
-- [Contribuir](#-contribuir)
+- [Descripcion](#descripcion)
+- [Caracteristicas](#caracteristicas)
+- [Arquitectura](#arquitectura)
+- [Modelo de Datos: Flotilleros](#modelo-de-datos-flotilleros)
+- [Tecnologias](#tecnologias)
+- [Instalacion](#instalacion)
+- [Configuracion](#configuracion)
+- [Uso](#uso)
+- [API Reference](#api-reference)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Base de Datos](#base-de-datos)
+- [Google Drive](#google-drive)
+- [Despliegue](#despliegue)
+- [Contribuir](#contribuir)
 
 ---
 
-## 📖 Descripción
+## Descripcion
 
-**FacturaFlow AI** es una aplicación web que automatiza el procesamiento de facturas CFDI (Comprobante Fiscal Digital por Internet) mexicanas. Utiliza inteligencia artificial para extraer datos de archivos XML y PDF, validar la información y almacenarla de forma organizada.
+**FacturaFlow AI** es una aplicacion web que automatiza el procesamiento de facturas CFDI (Comprobante Fiscal Digital por Internet) mexicanas. Utiliza inteligencia artificial para extraer datos de archivos XML y PDF, validar la informacion y almacenarla de forma organizada.
 
 ### Problema que resuelve
 
-- ❌ Captura manual de datos de facturas
-- ❌ Errores en la transcripción de información fiscal
-- ❌ Desorganización de archivos de facturas
-- ❌ Dificultad para asociar facturas con proyectos y facturadores
+- Captura manual de datos de facturas
+- Errores en la transcripcion de informacion fiscal
+- Desorganizacion de archivos de facturas
+- Dificultad para asociar facturas con proyectos y facturadores
+- Gestion de flotas de repartidores y sus facturadores
 
-### Solución
+### Solucion
 
-- ✅ Extracción automática de datos con Google Gemini AI
-- ✅ Validación de RFC y campos fiscales en tiempo real
-- ✅ Almacenamiento organizado en Google Drive
-- ✅ Base de datos relacional para consultas y reportes
+- Extraccion automatica de datos con Google Gemini AI
+- Validacion de RFC y campos fiscales en tiempo real
+- Almacenamiento organizado en Google Drive
+- Base de datos relacional para consultas y reportes
+- Soporte para flotilleros (dueños de flota) y drivers independientes
 
 ---
 
-## ✨ Características
+## Caracteristicas
 
 ### Frontend
-- 🎨 Interfaz moderna con Tailwind CSS
-- 📤 Drag & Drop para carga de archivos XML/PDF
-- 🤖 Extracción automática de datos con IA
-- ✏️ Edición manual de campos extraídos
-- 📱 Diseño responsive
+- Interfaz moderna con Tailwind CSS
+- Drag & Drop para carga de archivos XML/PDF
+- Extraccion automatica de datos con IA
+- Edicion manual de campos extraidos
+- Diseno responsive
+- Seleccion dinamica de proyectos desde base de datos
 
 ### Backend
-- 🔐 API RESTful segura con Vercel Functions
-- 🗄️ Conexión directa a Supabase (PostgreSQL)
-- ☁️ Integración con Google Drive via Service Account
-- ✅ Validación de duplicados por UUID
-- 📁 Organización automática de archivos
+- API RESTful segura con Vercel Functions
+- Conexion directa a Supabase (PostgreSQL)
+- Integracion con Google Drive via Service Account
+- Validacion de duplicados por UUID
+- Organizacion automatica de archivos
+- Soporte para modelo Flotilleros/Drivers
 
 ### Inteligencia Artificial
-- 🧠 Google Gemini 2.5 Flash para extracción de datos
-- 📄 Procesamiento de XML estructurado
-- 🖼️ OCR de facturas en PDF
-- 🎯 Detección automática de proyecto
+- Google Gemini 2.5 Flash para extraccion de datos
+- Procesamiento de XML estructurado
+- OCR de facturas en PDF
+- Deteccion automatica de proyecto
 
 ---
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -104,21 +109,85 @@
 │    Supabase     │  │  Google Drive   │  │   Health Check  │
 │   (PostgreSQL)  │  │ (Service Acct)  │  │   (Services)    │
 │  ┌───────────┐  │  │  ┌───────────┐  │  └─────────────────┘
-│  │  drivers  │  │  │  │ Semana/   │  │
-│  │  invoices │  │  │  │ Proyecto/ │  │
-│  │  items    │  │  │  │ Emisor/   │  │
-│  │  files    │  │  │  │  *.xml    │  │
-│  └───────────┘  │  │  │  *.pdf    │  │
-└─────────────────┘  │  └───────────┘  │
-                     └─────────────────┘
+│  │flotilleros│  │  │  │ Semana/   │  │
+│  │  drivers  │  │  │  │ Proyecto/ │  │
+│  │  invoices │  │  │  │ Emisor/   │  │
+│  │  items    │  │  │  │  *.xml    │  │
+│  │  files    │  │  │  │  *.pdf    │  │
+│  └───────────┘  │  │  └───────────┘  │
+└─────────────────┘  └─────────────────┘
 ```
 
 ---
 
-## 🛠️ Tecnologías
+## Modelo de Datos: Flotilleros
+
+### Conceptos Clave
+
+El sistema soporta dos tipos de facturadores:
+
+#### Flotillero (Fleet Owner)
+- Dueno de una flota con multiples repartidores
+- Factura por los servicios de sus drivers
+- Los pagos van al flotillero
+- Ejemplo: Empresa con 10 camionetas
+
+#### Independiente (Independent Driver)
+- Driver que factura por su propio trabajo
+- Es simultaneamente flotillero y driver
+- max_drivers = 1
+- Ejemplo: Repartidor autonomo
+
+### Diagrama de Relaciones
+
+```
+                    FLOTILLEROS
+                   ┌────────────┐
+                   │  id (PK)   │
+                   │  rfc (UQ)  │
+                   │  type:     │
+                   │  flotillero│◄───────────────────────┐
+                   │  /indepen- │                        │
+                   │  diente    │                        │
+                   └─────┬──────┘                        │
+                         │                              │
+                         │ 1:N                          │
+                         ▼                              │
+                      DRIVERS                           │
+                   ┌────────────┐                       │
+                   │  id (PK)   │                       │
+                   │  rfc (UQ)  │                       │
+                   │flotillero_id├───────────────────────┘
+                   │ (FK, NULL) │
+                   └─────┬──────┘
+                         │
+                         │
+                         ▼
+                     INVOICES
+                   ┌────────────────────────┐
+                   │  id (PK)               │
+                   │  uuid (UQ)             │
+                   │  driver_id (FK)        │──► Driver asociado
+                   │  biller_id (FK)        │──► Flotillero que factura
+                   │  operated_by_driver_id │──► Driver que opero (opcional)
+                   │  project_id (FK)       │
+                   └────────────────────────┘
+```
+
+### Casos de Uso
+
+| Escenario | biller_id | driver_id | operated_by_driver_id |
+|-----------|-----------|-----------|----------------------|
+| Independiente factura por si mismo | flotillero_independiente | driver (mismo RFC) | NULL |
+| Flotillero factura por su driver | flotillero_flota | driver_registrado | driver_que_trabajo |
+| Flotillero sin especificar driver | flotillero_flota | driver_default | NULL |
+
+---
+
+## Tecnologias
 
 ### Frontend
-| Tecnología | Versión | Uso |
+| Tecnologia | Version | Uso |
 |------------|---------|-----|
 | React | 18.3 | UI Framework |
 | TypeScript | 5.4 | Type Safety |
@@ -127,7 +196,7 @@
 | Lucide React | 0.562 | Iconos |
 
 ### Backend
-| Tecnología | Versión | Uso |
+| Tecnologia | Version | Uso |
 |------------|---------|-----|
 | Vercel Functions | - | Serverless API |
 | Supabase JS | 2.x | Cliente PostgreSQL |
@@ -136,14 +205,14 @@
 ### Servicios
 | Servicio | Uso |
 |----------|-----|
-| Google Gemini | Extracción de datos con IA |
+| Google Gemini | Extraccion de datos con IA |
 | Supabase | Base de datos PostgreSQL |
 | Google Drive | Almacenamiento de archivos |
 | Vercel | Hosting y Functions |
 
 ---
 
-## 📦 Instalación
+## Instalacion
 
 ### Prerrequisitos
 
@@ -172,7 +241,7 @@ npm install
 cp .env.example .env.local
 ```
 
-Editar `.env.local` con tus credenciales (ver [Configuración](#-configuración)).
+Editar `.env.local` con tus credenciales (ver [Configuracion](#configuracion)).
 
 ### Ejecutar en desarrollo
 
@@ -180,11 +249,11 @@ Editar `.env.local` con tus credenciales (ver [Configuración](#-configuración)
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:3000`
+La aplicacion estara disponible en `http://localhost:3000`
 
 ---
 
-## ⚙️ Configuración
+## Configuracion
 
 ### Variables de Entorno
 
@@ -200,58 +269,61 @@ GOOGLE_SERVICE_ACCOUNT_EMAIL=xxx@project.iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 GOOGLE_DRIVE_ROOT_FOLDER_ID=1AbCdEfGhIjKlMnOp
 
-# Configuración
+# Configuracion
 EXPECTED_RECEIVER_RFC=BLI180227F23
 
 # Gemini AI
 GEMINI_API_KEY=AIzaSy...
 ```
 
-### Configuración detallada
+### Configuracion detallada
 
-Para instrucciones paso a paso de cómo obtener cada credencial:
+Para instrucciones paso a paso de como obtener cada credencial:
 
-📖 **[Ver Guía Completa de Configuración](docs/api/SETUP.md)**
+**[Ver Guia Completa de Configuracion](docs/api/SETUP.md)**
 
 ---
 
-## 🚀 Uso
+## Uso
 
 ### 1. Cargar archivos
 
 Arrastra o selecciona los archivos XML y PDF de la factura CFDI.
 
-### 2. Extracción automática
+### 2. Extraccion automatica
 
-El sistema extrae automáticamente:
-- Datos del emisor (RFC, nombre, régimen fiscal)
+El sistema extrae automaticamente:
+- Datos del emisor (RFC, nombre, regimen fiscal)
 - Datos del receptor
-- Información de la factura (UUID, folio, fecha)
+- Informacion de la factura (UUID, folio, fecha)
 - Desglose financiero (subtotal, impuestos, retenciones)
 - Conceptos/items de la factura
 
-### 3. Revisión y edición
+### 3. Revision y edicion
 
-Revisa los datos extraídos y corrige si es necesario.
+Revisa los datos extraidos y corrige si es necesario.
 
-### 4. Envío
+### 4. Envio
 
 Al enviar, el sistema:
-1. Valida que el UUID no esté duplicado
-2. Guarda los datos en Supabase
-3. Sube los archivos a Google Drive
-4. Organiza en carpetas: `Semana/Proyecto/Emisor/`
+1. Valida que el UUID no este duplicado
+2. Crea/actualiza el flotillero (facturador)
+3. Crea/actualiza el driver asociado
+4. Guarda la factura con relaciones correctas
+5. Sube los archivos a Google Drive
+6. Organiza en carpetas: `Semana/Proyecto/Emisor/`
 
 ---
 
-## 📚 API Reference
+## API Reference
 
 ### Endpoints disponibles
 
-| Método | Endpoint | Descripción |
+| Metodo | Endpoint | Descripcion |
 |--------|----------|-------------|
 | `POST` | `/api/invoice` | Registrar factura completa |
 | `POST` | `/api/validate` | Verificar si UUID existe |
+| `GET` | `/api/projects` | Obtener lista de proyectos |
 | `GET` | `/api/health` | Estado de servicios |
 
 ### Ejemplo: Registrar factura
@@ -262,7 +334,7 @@ curl -X POST https://sube-tu-factura.vercel.app/api/invoice \
   -d '{
     "week": 4,
     "project": "MERCADO LIBRE",
-    "issuer": { "rfc": "XAXX010101000", "name": "Juan Pérez" },
+    "issuer": { "rfc": "XAXX010101000", "name": "Juan Perez" },
     "receiver": { "rfc": "BLI180227F23" },
     "invoice": { "uuid": "3FA85F64-5717-4562-B3FC-2C963F66AFA6", "date": "2026-01-20" },
     "payment": { "method": "PUE" },
@@ -273,24 +345,25 @@ curl -X POST https://sube-tu-factura.vercel.app/api/invoice \
   }'
 ```
 
-### Documentación completa
+### Documentacion completa
 
-- 📖 [Guía de Integración](docs/api/README.md)
-- 📋 [Especificación OpenAPI](docs/api/openapi.yaml)
-- 📬 [Colección Postman](docs/api/postman.json)
+- [Guia de Integracion](docs/api/README.md)
+- [Especificacion OpenAPI](docs/api/openapi.yaml)
+- [Coleccion Postman](docs/api/postman.json)
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 sube-tu-factura/
 ├── api/                          # Backend (Vercel Functions)
 │   ├── invoice.ts                # POST /api/invoice
 │   ├── validate.ts               # POST /api/validate
+│   ├── projects.ts               # GET /api/projects
 │   ├── health.ts                 # GET /api/health
 │   └── lib/
-│       ├── supabase.ts           # Cliente Supabase
+│       ├── supabase.ts           # Cliente Supabase + Flotilleros
 │       ├── googleDrive.ts        # Cliente Google Drive
 │       ├── validators.ts         # Validaciones
 │       └── types.ts              # Tipos TypeScript
@@ -300,6 +373,7 @@ sube-tu-factura/
 │   │   ├── common/               # Componentes reutilizables
 │   │   │   ├── FileUpload.tsx
 │   │   │   ├── InputField.tsx
+│   │   │   ├── ProjectSelect.tsx # Selector de proyectos
 │   │   │   └── SelectField.tsx
 │   │   ├── layout/               # Layout components
 │   │   │   ├── Header.tsx
@@ -311,11 +385,12 @@ sube-tu-factura/
 │   │       └── ItemsTable.tsx
 │   ├── hooks/
 │   │   ├── useInvoiceForm.ts     # Estado del formulario
-│   │   ├── useInvoiceExtraction.ts # Lógica de extracción
+│   │   ├── useInvoiceExtraction.ts # Logica de extraccion
+│   │   ├── useProjects.ts        # Hook para proyectos
 │   │   └── useWeekOptions.ts     # Opciones de semanas
 │   ├── services/
-│   │   ├── geminiService.ts      # Integración Gemini AI
-│   │   └── webhookService.ts     # Comunicación con API
+│   │   ├── geminiService.ts      # Integracion Gemini AI
+│   │   └── webhookService.ts     # Comunicacion con API
 │   ├── types/
 │   │   └── invoice.ts            # Tipos de factura
 │   ├── utils/
@@ -323,20 +398,21 @@ sube-tu-factura/
 │   │   ├── files.ts              # Utilidades de archivos
 │   │   └── formatters.ts         # Formateadores
 │   ├── constants/
-│   │   └── config.ts             # Configuración
+│   │   └── config.ts             # Configuracion
 │   ├── App.tsx                   # Componente principal
 │   └── main.tsx                  # Entry point
 │
 ├── database/
-│   ├── 001_initial_schema.sql    # Schema PostgreSQL
-│   └── schema.md                 # Documentación del schema
+│   ├── 001_initial_schema.sql    # Schema PostgreSQL inicial
+│   ├── 002_add_flotilleros.sql   # Migracion: agregar flotilleros
+│   └── schema.md                 # Documentacion del schema v2.0
 │
 ├── docs/
 │   └── api/
-│       ├── README.md             # Guía de integración
-│       ├── SETUP.md              # Guía de configuración
-│       ├── openapi.yaml          # Especificación OpenAPI
-│       └── postman.json          # Colección Postman
+│       ├── README.md             # Guia de integracion
+│       ├── SETUP.md              # Guia de configuracion
+│       ├── openapi.yaml          # Especificacion OpenAPI
+│       └── postman.json          # Coleccion Postman
 │
 ├── n8n/                          # (Legacy) Workflows n8n
 │   ├── workflow-facturas.json
@@ -351,73 +427,91 @@ sube-tu-factura/
 
 ---
 
-## 🗄️ Base de Datos
+## Base de Datos
 
-### Diagrama ER
+### Diagrama ER (v2.0 con Flotilleros)
 
 ```
-┌─────────────┐       ┌──────────────┐       ┌───────────────┐
-│   drivers   │       │   projects   │       │ fiscal_regimes│
-├─────────────┤       ├──────────────┤       ├───────────────┤
-│ id (PK)     │       │ id (PK)      │       │ id (PK)       │
-│ rfc (UQ)    │       │ code (UQ)    │       │ code (UQ)     │
-│ fiscal_name │       │ name         │       │ name          │
-│ email       │       │ is_active    │       │ applies_to    │
-│ phone       │       └──────────────┘       └───────────────┘
-│ status      │              │
-└──────┬──────┘              │
-       │                     │
-       │    ┌────────────────┴────────────────┐
-       │    │           invoices              │
-       │    ├─────────────────────────────────┤
-       └────│ id (PK)                         │
-            │ driver_id (FK)                  │
-            │ project_id (FK)                 │
-            │ uuid (UQ)                       │
-            │ folio, series, invoice_date     │
-            │ issuer_*, receiver_*            │
-            │ payment_method, payment_form    │
-            │ subtotal, total_tax, total      │
-            │ status                          │
-            └─────────────┬───────────────────┘
-                          │
-          ┌───────────────┼───────────────┐
-          │               │               │
-          ▼               ▼               ▼
+┌─────────────────┐
+│   flotilleros   │
+├─────────────────┤
+│ id (PK)         │
+│ rfc (UQ)        │
+│ fiscal_name     │
+│ type (enum)     │◄──────────────────────────────┐
+│ status          │                               │
+└────────┬────────┘                               │
+         │ 1:N                                    │
+         ▼                                        │
+┌─────────────────┐       ┌──────────────┐       │
+│     drivers     │       │   projects   │       │
+├─────────────────┤       ├──────────────┤       │
+│ id (PK)         │       │ id (PK)      │       │
+│ rfc (UQ)        │       │ code (UQ)    │       │
+│ first_name      │       │ name         │       │
+│ last_name       │       │ color        │       │
+│ flotillero_id   │───────┤ sort_order   │       │
+│ status          │       │ is_active    │       │
+└────────┬────────┘       └──────┬───────┘       │
+         │                       │               │
+         │    ┌──────────────────┴───────────────┤
+         │    │           invoices               │
+         │    ├──────────────────────────────────┤
+         └────│ id (PK)                          │
+              │ driver_id (FK)                   │
+              │ biller_id (FK) ──────────────────┘
+              │ operated_by_driver_id (FK)
+              │ project_id (FK)
+              │ uuid (UQ)
+              │ folio, series, invoice_date
+              │ issuer_*, receiver_*
+              │ payment_method, payment_form
+              │ subtotal, total_tax, total
+              │ status
+              └─────────────┬────────────────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+            ▼               ▼               ▼
 ┌─────────────────┐ ┌───────────────┐ ┌───────────────┐
 │ invoice_items   │ │ invoice_files │ │   payments    │
 ├─────────────────┤ ├───────────────┤ ├───────────────┤
 │ id (PK)         │ │ id (PK)       │ │ id (PK)       │
-│ invoice_id (FK) │ │ invoice_id(FK)│ │ status        │
-│ description     │ │ file_type     │ │ amount        │
-│ quantity        │ │ google_drive_*│ │ payment_date  │
-│ unit_price      │ └───────────────┘ └───────────────┘
-│ amount          │
+│ invoice_id (FK) │ │ invoice_id(FK)│ │ driver_id     │
+│ description     │ │ file_type     │ │ flotillero_id │
+│ quantity        │ │ google_drive_*│ │ status        │
+│ unit_price      │ └───────────────┘ │ net_amount    │
+│ amount          │                   └───────────────┘
 └─────────────────┘
 ```
 
-### Ejecutar schema
+### Ejecutar migraciones
 
 ```bash
-# En Supabase SQL Editor, ejecutar:
+# En Supabase SQL Editor, ejecutar en orden:
+
+# 1. Schema inicial
 database/001_initial_schema.sql
+
+# 2. Agregar flotilleros (v2.0)
+database/002_add_flotilleros.sql
 ```
 
-📖 [Ver documentación completa del schema](database/schema.md)
+**[Ver documentacion completa del schema](database/schema.md)**
 
 ---
 
-## ☁️ Google Drive
+## Google Drive
 
 ### Estructura de carpetas
 
-Los archivos se organizan automáticamente en una jerarquía de 3 niveles:
+Los archivos se organizan automaticamente en una jerarquia de 3 niveles:
 
 ```
-📁 Facturas CFDI/                    (Carpeta raíz)
+📁 Facturas CFDI/                    (Carpeta raiz)
 ├── 📁 Semana_01_2026/               (Nivel 1: Semana)
 │   ├── 📁 MERCADO_LIBRE/            (Nivel 2: Proyecto)
-│   │   ├── 📁 XAXX010101000_Juan/   (Nivel 3: Emisor)
+│   │   ├── 📁 XAXX010101000_Juan/   (Nivel 3: Emisor/Flotillero)
 │   │   │   ├── UUID-1.xml
 │   │   │   └── UUID-1.pdf
 │   │   └── 📁 YAXX020202000_Maria/
@@ -428,15 +522,15 @@ Los archivos se organizan automáticamente en una jerarquía de 3 niveles:
 │   └── ...
 ```
 
-### Relación Proyecto-Facturador
+### Relacion Proyecto-Facturador
 
-- Un **proyecto** puede tener múltiples **facturadores** (1:N)
-- Un **facturador** puede aparecer en múltiples **proyectos**
-- Un **facturador** puede aparecer en múltiples **semanas**
+- Un **proyecto** puede tener multiples **facturadores** (1:N)
+- Un **facturador** (flotillero) puede aparecer en multiples **proyectos**
+- Un **facturador** puede aparecer en multiples **semanas**
 
 ---
 
-## 🚀 Despliegue
+## Despliegue
 
 ### Vercel (Recomendado)
 
@@ -448,8 +542,8 @@ Los archivos se organizan automáticamente en una jerarquía de 3 niveles:
    - En Settings → Environment Variables
    - Agregar todas las variables de `.env.example`
 
-3. **Deploy automático**
-   - Cada push a `main` despliega automáticamente
+3. **Deploy automatico**
+   - Cada push a `main` despliega automaticamente
 
 ### Manual
 
@@ -463,13 +557,13 @@ npm run preview
 
 ---
 
-## 🤝 Contribuir
+## Contribuir
 
 ### Reportar bugs
 
-1. Verifica que el bug no esté ya reportado
+1. Verifica que el bug no este ya reportado
 2. Crea un issue con:
-   - Descripción clara del problema
+   - Descripcion clara del problema
    - Pasos para reproducir
    - Comportamiento esperado vs actual
    - Screenshots si aplica
@@ -486,23 +580,23 @@ npm run preview
 
 ```
 feat:     Nueva funcionalidad
-fix:      Corrección de bug
-docs:     Documentación
-style:    Formato (no afecta código)
-refactor: Refactorización
+fix:      Correccion de bug
+docs:     Documentacion
+style:    Formato (no afecta codigo)
+refactor: Refactorizacion
 test:     Tests
 chore:    Mantenimiento
 ```
 
 ---
 
-## 📄 Licencia
+## Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver [LICENSE](LICENSE) para más detalles.
+Este proyecto esta bajo la Licencia MIT. Ver [LICENSE](LICENSE) para mas detalles.
 
 ---
 
-## 👥 Equipo
+## Equipo
 
 **PartRunner Engineering**
 
@@ -512,8 +606,8 @@ Este proyecto está bajo la Licencia MIT. Ver [LICENSE](LICENSE) para más detal
 
 <div align="center">
 
-**[⬆ Volver arriba](#facturaflow-ai)**
+**[Volver arriba](#facturaflow-ai)**
 
-Hecho con ❤️ por PartRunner
+Hecho con amor por PartRunner
 
 </div>

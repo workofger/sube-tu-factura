@@ -118,24 +118,68 @@ export interface HealthResponse {
 }
 
 // Database Types
-export interface DbDriver {
+
+/**
+ * Flotillero - Entity that issues invoices
+ * Can be a fleet owner (flotillero) with multiple drivers
+ * or an independent driver (independiente) who bills for themselves
+ */
+export interface DbFlotillero {
   id: string;
   rfc: string;
   fiscal_name: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  phone?: string;
+  trade_name?: string;
   fiscal_regime_code?: string;
   fiscal_zip_code?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  type: 'flotillero' | 'independiente';
+  max_drivers: number;
   status: string;
+  is_verified: boolean;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
 
+/**
+ * Driver - Operator who performs deliveries
+ * Can be independent (bills for themselves via flotillero with same RFC)
+ * or associated with a flotillero (fleet owner bills on their behalf)
+ */
+export interface DbDriver {
+  id: string;
+  rfc: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  curp?: string;
+  fiscal_name?: string;
+  fiscal_regime_code?: string;
+  fiscal_zip_code?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_clabe?: string;
+  flotillero_id?: string; // Reference to flotillero
+  status: string;
+  is_verified: boolean;
+  verification_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Invoice - CFDI invoice record
+ * biller_id: flotillero who issued the invoice
+ * operated_by_driver_id: driver who performed the service (optional)
+ */
 export interface DbInvoice {
   id: string;
   driver_id: string;
+  biller_id?: string; // New: flotillero who issues the invoice
+  operated_by_driver_id?: string; // New: driver who performed the work
   project_id?: string;
   uuid: string;
   folio?: string;
@@ -178,5 +222,8 @@ export interface DbProject {
   code: string;
   name: string;
   description?: string;
+  color?: string;
+  icon?: string;
+  sort_order?: number;
   is_active: boolean;
 }

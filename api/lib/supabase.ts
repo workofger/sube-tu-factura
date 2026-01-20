@@ -3,6 +3,7 @@ import {
   DbDriver, 
   DbInvoice, 
   DbProject, 
+  DbFlotillero,
   InvoicePayload,
   InvoiceItem 
 } from './types';
@@ -65,11 +66,53 @@ export const checkUuidExists = async (uuid: string): Promise<{ exists: boolean; 
 };
 
 /**
- * Get or create a driver by RFC
+ * Get or create a flotillero (biller) by RFC
+ * Flotilleros are the entities that issue invoices (can be independent drivers or fleet owners)
+ */
+export const upsertFlotillero = async (payload: InvoicePayload): Promise<DbFlotillero> => {
+  const client = getSupabaseClient();
+  const issuer = payload.issuer;
+  
+  // Extract regime code (first 3 chars)
+  const regimeCode = issuer.regime ? issuer.regime.substring(0, 3) : null;
+  
+  const flotilleroData = {
+    rfc: issuer.rfc,
+    fiscal_name: issuer.name,
+    fiscal_regime_code: regimeCode,
+    fiscal_zip_code: issuer.zipCode || null,
+    email: payload.contact.email || `${issuer.rfc.toLowerCase()}@pendiente.com`,
+    phone: payload.contact.phone || null,
+    type: 'independiente', // Default to independent, can be changed later
+    status: 'active'
+  };
+  
+  const { data, error } = await client
+    .from('flotilleros')
+    .upsert(flotilleroData, { 
+      onConflict: 'rfc',
+      ignoreDuplicates: false 
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    throw new Error(`Failed to upsert flotillero: ${error.message}`);
+  }
+  
+  return data as DbFlotillero;
+};
+
+/**
+ * Get or create a driver by RFC (legacy support)
+ * Now also ensures the driver is linked to a flotillero
  */
 export const upsertDriver = async (payload: InvoicePayload): Promise<DbDriver> => {
   const client = getSupabaseClient();
   const issuer = payload.issuer;
+  
+  // First, ensure flotillero exists
+  const flotillero = await upsertFlotillero(payload);
   
   // Split name into parts
   const nameParts = (issuer.name || '').trim().split(' ');
@@ -88,6 +131,7 @@ export const upsertDriver = async (payload: InvoicePayload): Promise<DbDriver> =
     phone: payload.contact.phone || null,
     fiscal_regime_code: regimeCode,
     fiscal_zip_code: issuer.zipCode || null,
+    flotillero_id: flotillero.id, // Link to flotillero
     status: 'active'
   };
   
@@ -130,19 +174,28 @@ export const getProject = async (projectName: string): Promise<DbProject | null>
 };
 
 /**
- * Insert a new invoice
+ * Insert a new invoice with flotillero support
  */
 export const insertInvoice = async (
   payload: InvoicePayload, 
   driverId: string, 
-  projectId: string | null
+  projectId: string | null,
+  billerId?: string // Optional: flotillero who issues the invoice
 ): Promise<DbInvoice> => {
   const client = getSupabaseClient();
   
   const invoiceYear = new Date(payload.invoice.date).getFullYear();
   
+  // Get flotillero ID if not provided (for backwards compatibility)
+  let flotilleroId = billerId;
+  if (!flotilleroId) {
+    const flotillero = await upsertFlotillero(payload);
+    flotilleroId = flotillero.id;
+  }
+  
   const invoiceData = {
     driver_id: driverId,
+    biller_id: flotilleroId, // New: who issues the invoice
     project_id: projectId,
     uuid: payload.invoice.uuid,
     folio: payload.invoice.folio || null,
@@ -254,4 +307,43 @@ export const saveFileRecord = async (
   if (error) {
     throw new Error(`Failed to save file record: ${error.message}`);
   }
+};
+
+/**
+ * Get all flotilleros
+ */
+export const getFlotilleros = async (): Promise<DbFlotillero[]> => {
+  const client = getSupabaseClient();
+  
+  const { data, error } = await client
+    .from('flotilleros')
+    .select('*')
+    .eq('status', 'active')
+    .order('fiscal_name');
+  
+  if (error) {
+    throw new Error(`Failed to get flotilleros: ${error.message}`);
+  }
+  
+  return data as DbFlotillero[];
+};
+
+/**
+ * Get drivers by flotillero
+ */
+export const getDriversByFlotillero = async (flotilleroId: string): Promise<DbDriver[]> => {
+  const client = getSupabaseClient();
+  
+  const { data, error } = await client
+    .from('drivers')
+    .select('*')
+    .eq('flotillero_id', flotilleroId)
+    .eq('status', 'active')
+    .order('first_name');
+  
+  if (error) {
+    throw new Error(`Failed to get drivers: ${error.message}`);
+  }
+  
+  return data as DbDriver[];
 };
