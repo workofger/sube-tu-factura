@@ -3,8 +3,11 @@ import { CONFIG } from '../constants/config';
 import { fileToBase64 } from '../utils/files';
 import { parseNumber } from '../utils/formatters';
 
+// API base URL - uses relative path for same-origin requests in production
+const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:3000' : '';
+
 /**
- * Build the complete webhook payload with all invoice data and files in Base64
+ * Build the complete payload with all invoice data and files in Base64
  */
 export const buildWebhookPayload = async (formData: InvoiceData): Promise<WebhookPayload> => {
   // Convert files to Base64
@@ -108,35 +111,101 @@ export const buildWebhookPayload = async (formData: InvoiceData): Promise<Webhoo
 };
 
 /**
- * Send invoice data to n8n webhook
+ * API Response interface
  */
-export const submitInvoice = async (formData: InvoiceData): Promise<{ success: boolean; message: string }> => {
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  error?: string;
+  details?: string[];
+  data?: {
+    invoiceId?: string;
+    uuid?: string;
+    driveFolderPath?: string;
+    files?: {
+      xml?: string;
+      pdf?: string;
+    };
+    existingInvoiceId?: string;
+  };
+}
+
+/**
+ * Check if a UUID already exists in the system
+ */
+export const checkUuidExists = async (uuid: string): Promise<{ exists: boolean; message: string }> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ uuid }),
+    });
+
+    const data = await response.json();
+    return {
+      exists: data.exists,
+      message: data.message,
+    };
+  } catch (error) {
+    console.error('UUID check error:', error);
+    return {
+      exists: false,
+      message: 'Error al verificar UUID',
+    };
+  }
+};
+
+/**
+ * Submit invoice to the backend API
+ */
+export const submitInvoice = async (formData: InvoiceData): Promise<{ 
+  success: boolean; 
+  message: string;
+  data?: ApiResponse['data'];
+}> => {
   try {
     // Build the complete payload
     const payload = await buildWebhookPayload(formData);
 
-    // Send to webhook
-    const response = await fetch(CONFIG.WEBHOOK_URL, {
+    // Send to backend API
+    const response = await fetch(`${API_BASE_URL}/api/invoice`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      mode: 'cors',
-      credentials: 'omit',
       body: JSON.stringify(payload),
     });
 
-    if (response.ok) {
+    const data: ApiResponse = await response.json();
+
+    if (response.ok && data.success) {
       return {
         success: true,
-        message: '¡Factura enviada correctamente!',
+        message: data.message || '¡Factura enviada correctamente!',
+        data: data.data,
       };
-    } else {
-      console.error('Webhook error:', response.status, response.statusText);
+    } else if (response.status === 409) {
+      // Duplicate invoice
       return {
         success: false,
-        message: `Error al enviar la factura: Servidor respondió ${response.status}`,
+        message: data.message || 'Esta factura ya fue registrada anteriormente',
+        data: data.data,
+      };
+    } else if (response.status === 400) {
+      // Validation error
+      const errorDetails = data.details?.join(', ') || 'Datos inválidos';
+      return {
+        success: false,
+        message: `Error de validación: ${errorDetails}`,
+      };
+    } else {
+      console.error('API error:', response.status, data);
+      return {
+        success: false,
+        message: data.message || `Error al enviar la factura: Servidor respondió ${response.status}`,
       };
     }
   } catch (error) {
@@ -149,7 +218,30 @@ export const submitInvoice = async (formData: InvoiceData): Promise<{ success: b
 };
 
 /**
- * Validate form data before submission
+ * Check API health status
+ */
+export const checkApiHealth = async (): Promise<{
+  healthy: boolean;
+  services: { supabase: string; googleDrive: string };
+}> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/health`);
+    const data = await response.json();
+    
+    return {
+      healthy: data.status === 'healthy',
+      services: data.services,
+    };
+  } catch {
+    return {
+      healthy: false,
+      services: { supabase: 'error', googleDrive: 'error' },
+    };
+  }
+};
+
+/**
+ * Validate form data before submission (client-side)
  */
 export const validateFormData = (formData: InvoiceData): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];

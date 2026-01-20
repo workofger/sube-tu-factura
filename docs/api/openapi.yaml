@@ -1,0 +1,478 @@
+openapi: 3.0.3
+info:
+  title: FacturaFlow API
+  description: |
+    API para gestión de facturas CFDI.
+    
+    Esta API permite:
+    - Registrar facturas con archivos XML/PDF
+    - Validar si un UUID ya existe
+    - Verificar el estado de los servicios
+    
+    Los archivos se almacenan automáticamente en Google Drive con estructura organizada por semana, proyecto y facturador.
+  version: 1.0.0
+  contact:
+    name: PartRunner Support
+    email: soporte@partrunner.com
+    url: https://github.com/workofger/sube-tu-factura
+
+servers:
+  - url: https://sube-tu-factura.vercel.app/api
+    description: Producción
+  - url: http://localhost:3000/api
+    description: Desarrollo local
+
+tags:
+  - name: Invoices
+    description: Operaciones con facturas
+  - name: Health
+    description: Estado del sistema
+
+paths:
+  /invoice:
+    post:
+      tags:
+        - Invoices
+      summary: Registrar factura
+      description: Procesa y registra una factura CFDI completa con archivos
+      operationId: createInvoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoicePayload'
+            example:
+              week: 4
+              project: "MERCADO LIBRE"
+              issuer:
+                rfc: "XAXX010101000"
+                name: "Juan Pérez García"
+                regime: "626"
+                zipCode: "06600"
+              receiver:
+                rfc: "BLI180227F23"
+                name: "PartRunner Logistics"
+                cfdiUse: "G03"
+              invoice:
+                uuid: "3FA85F64-5717-4562-B3FC-2C963F66AFA6"
+                folio: "A-001"
+                date: "2026-01-20"
+              payment:
+                method: "PUE"
+                form: "03"
+              financial:
+                subtotal: 10000
+                totalTax: 1600
+                totalAmount: 11600
+                currency: "MXN"
+              items:
+                - description: "Servicio de transporte"
+                  quantity: 1
+                  unitPrice: 10000
+                  amount: 10000
+              contact:
+                email: "juan@gmail.com"
+              files:
+                xml:
+                  name: "factura.xml"
+                  content: "BASE64_CONTENT"
+                  mimeType: "application/xml"
+      responses:
+        '201':
+          description: Factura registrada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceSuccessResponse'
+        '400':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '409':
+          description: Factura duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DuplicateErrorResponse'
+        '500':
+          description: Error interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalErrorResponse'
+
+  /validate:
+    post:
+      tags:
+        - Invoices
+      summary: Validar UUID
+      description: Verifica si un UUID de factura ya existe en el sistema
+      operationId: validateUuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - uuid
+              properties:
+                uuid:
+                  type: string
+                  format: uuid
+                  example: "3FA85F64-5717-4562-B3FC-2C963F66AFA6"
+      responses:
+        '200':
+          description: Resultado de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateResponse'
+        '400':
+          description: UUID inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Estado del sistema
+      description: Verifica la conexión con Supabase y Google Drive
+      operationId: getHealth
+      responses:
+        '200':
+          description: Sistema saludable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '207':
+          description: Sistema degradado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Sistema no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  schemas:
+    InvoicePayload:
+      type: object
+      required:
+        - week
+        - project
+        - issuer
+        - receiver
+        - invoice
+        - payment
+        - financial
+        - items
+        - files
+      properties:
+        week:
+          type: integer
+          minimum: 1
+          maximum: 53
+          description: Número de semana
+        project:
+          type: string
+          enum: [MERCADO LIBRE, AMAZON, WALMART, SHOPIFY, OTRO]
+          description: Proyecto asociado
+        issuer:
+          $ref: '#/components/schemas/IssuerData'
+        receiver:
+          $ref: '#/components/schemas/ReceiverData'
+        invoice:
+          $ref: '#/components/schemas/InvoiceIdentification'
+        payment:
+          $ref: '#/components/schemas/PaymentData'
+        financial:
+          $ref: '#/components/schemas/FinancialData'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItem'
+        contact:
+          $ref: '#/components/schemas/ContactData'
+        files:
+          $ref: '#/components/schemas/FilesData'
+
+    IssuerData:
+      type: object
+      required:
+        - rfc
+        - name
+      properties:
+        rfc:
+          type: string
+          pattern: '^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$'
+          example: "XAXX010101000"
+        name:
+          type: string
+          example: "Juan Pérez García"
+        regime:
+          type: string
+          example: "626"
+        zipCode:
+          type: string
+          example: "06600"
+
+    ReceiverData:
+      type: object
+      required:
+        - rfc
+      properties:
+        rfc:
+          type: string
+          example: "BLI180227F23"
+        name:
+          type: string
+        regime:
+          type: string
+        zipCode:
+          type: string
+        cfdiUse:
+          type: string
+          example: "G03"
+
+    InvoiceIdentification:
+      type: object
+      required:
+        - uuid
+        - date
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        folio:
+          type: string
+        series:
+          type: string
+        date:
+          type: string
+          format: date
+        certificationDate:
+          type: string
+          format: date-time
+        satCertNumber:
+          type: string
+
+    PaymentData:
+      type: object
+      required:
+        - method
+      properties:
+        method:
+          type: string
+          enum: [PUE, PPD]
+        form:
+          type: string
+          example: "03"
+        conditions:
+          type: string
+
+    FinancialData:
+      type: object
+      required:
+        - totalAmount
+        - currency
+      properties:
+        subtotal:
+          type: number
+        totalTax:
+          type: number
+        retentionIva:
+          type: number
+        retentionIvaRate:
+          type: number
+        retentionIsr:
+          type: number
+        retentionIsrRate:
+          type: number
+        totalAmount:
+          type: number
+        currency:
+          type: string
+          default: MXN
+        exchangeRate:
+          type: number
+          default: 1
+
+    InvoiceItem:
+      type: object
+      required:
+        - description
+        - quantity
+        - unitPrice
+        - amount
+      properties:
+        description:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        unitPrice:
+          type: number
+        amount:
+          type: number
+        productKey:
+          type: string
+        taxObject:
+          type: string
+
+    ContactData:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+
+    FilesData:
+      type: object
+      properties:
+        xml:
+          $ref: '#/components/schemas/FileData'
+        pdf:
+          $ref: '#/components/schemas/FileData'
+
+    FileData:
+      type: object
+      required:
+        - name
+        - content
+        - mimeType
+      properties:
+        name:
+          type: string
+        content:
+          type: string
+          format: byte
+          description: Contenido en Base64
+        mimeType:
+          type: string
+
+    InvoiceSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "¡Factura registrada exitosamente!"
+        data:
+          type: object
+          properties:
+            invoiceId:
+              type: string
+              format: uuid
+            uuid:
+              type: string
+              format: uuid
+            driveFolderPath:
+              type: string
+            files:
+              type: object
+              properties:
+                xml:
+                  type: string
+                  format: uri
+                pdf:
+                  type: string
+                  format: uri
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Datos inválidos"
+        details:
+          type: array
+          items:
+            type: string
+
+    DuplicateErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "DUPLICATE_INVOICE"
+        message:
+          type: string
+          example: "Esta factura ya fue registrada anteriormente"
+        data:
+          type: object
+          properties:
+            existingInvoiceId:
+              type: string
+              format: uuid
+
+    InternalErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "INTERNAL_ERROR"
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+
+    ValidateResponse:
+      type: object
+      properties:
+        exists:
+          type: boolean
+        message:
+          type: string
+        existingInvoiceId:
+          type: string
+          format: uuid
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            supabase:
+              type: string
+              enum: [connected, disconnected, error]
+            googleDrive:
+              type: string
+              enum: [connected, disconnected, error]

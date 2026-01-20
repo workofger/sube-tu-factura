@@ -1,0 +1,210 @@
+{
+  "info": {
+    "_postman_id": "facturaflow-api-collection",
+    "name": "FacturaFlow API",
+    "description": "Colección de endpoints para la API de FacturaFlow.\n\n**Configuración:**\n1. Importa esta colección en Postman\n2. Configura la variable `baseUrl` en el entorno\n3. ¡Listo para probar!\n\n**Variables de entorno sugeridas:**\n- `baseUrl`: https://sube-tu-factura.vercel.app/api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://sube-tu-factura.vercel.app/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Verifica el estado de conexión con Supabase y Google Drive."
+          },
+          "response": [
+            {
+              "name": "Healthy",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"status\": \"healthy\",\n  \"timestamp\": \"2026-01-20T10:30:00.000Z\",\n  \"services\": {\n    \"supabase\": \"connected\",\n    \"googleDrive\": \"connected\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validate",
+      "item": [
+        {
+          "name": "POST Validate UUID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uuid\": \"3FA85F64-5717-4562-B3FC-2C963F66AFA6\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["validate"]
+            },
+            "description": "Verifica si un UUID de factura ya existe en el sistema sin guardar datos."
+          },
+          "response": [
+            {
+              "name": "UUID Available",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"uuid\": \"3FA85F64-5717-4562-B3FC-2C963F66AFA6\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/validate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["validate"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"exists\": false,\n  \"message\": \"UUID disponible para registro\"\n}"
+            },
+            {
+              "name": "UUID Exists",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"uuid\": \"3FA85F64-5717-4562-B3FC-2C963F66AFA6\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/validate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["validate"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"exists\": true,\n  \"message\": \"Esta factura ya está registrada en el sistema\",\n  \"existingInvoiceId\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Invoice",
+      "item": [
+        {
+          "name": "POST Create Invoice (Minimal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"week\": 4,\n  \"project\": \"MERCADO LIBRE\",\n  \"issuer\": {\n    \"rfc\": \"XAXX010101000\",\n    \"name\": \"Juan Pérez García\"\n  },\n  \"receiver\": {\n    \"rfc\": \"BLI180227F23\"\n  },\n  \"invoice\": {\n    \"uuid\": \"3FA85F64-5717-4562-B3FC-2C963F66AFA6\",\n    \"date\": \"2026-01-20\"\n  },\n  \"payment\": {\n    \"method\": \"PUE\"\n  },\n  \"financial\": {\n    \"subtotal\": 10000,\n    \"totalTax\": 1600,\n    \"totalAmount\": 11600,\n    \"currency\": \"MXN\"\n  },\n  \"items\": [\n    {\n      \"description\": \"Servicio de transporte de paquetería\",\n      \"quantity\": 1,\n      \"unitPrice\": 10000,\n      \"amount\": 10000\n    }\n  ],\n  \"contact\": {\n    \"email\": \"juan@gmail.com\"\n  },\n  \"files\": {\n    \"xml\": {\n      \"name\": \"factura.xml\",\n      \"content\": \"PD94bWwgdmVyc2lvbj0iMS4wIj8+PHRlc3Q+PC90ZXN0Pg==\",\n      \"mimeType\": \"application/xml\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoice",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice"]
+            },
+            "description": "Registra una factura con los campos mínimos requeridos."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/invoice",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["invoice"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"¡Factura registrada exitosamente!\",\n  \"data\": {\n    \"invoiceId\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"uuid\": \"3FA85F64-5717-4562-B3FC-2C963F66AFA6\",\n    \"driveFolderPath\": \"Semana_04_2026/MERCADO_LIBRE/XAXX010101000_Juan_Perez_Garcia\",\n    \"files\": {\n      \"xml\": \"https://drive.google.com/file/d/1abc.../view\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Create Invoice (Complete)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"week\": 4,\n  \"project\": \"MERCADO LIBRE\",\n  \"issuer\": {\n    \"rfc\": \"XAXX010101000\",\n    \"name\": \"Juan Pérez García\",\n    \"regime\": \"626 - Régimen Simplificado de Confianza\",\n    \"zipCode\": \"06600\"\n  },\n  \"receiver\": {\n    \"rfc\": \"BLI180227F23\",\n    \"name\": \"PartRunner Logistics SA de CV\",\n    \"regime\": \"601\",\n    \"zipCode\": \"01000\",\n    \"cfdiUse\": \"G03\"\n  },\n  \"invoice\": {\n    \"uuid\": \"3FA85F64-5717-4562-B3FC-2C963F66AFA6\",\n    \"folio\": \"A-001\",\n    \"series\": \"A\",\n    \"date\": \"2026-01-20\",\n    \"certificationDate\": \"2026-01-20T10:30:00\",\n    \"satCertNumber\": \"00001000000509465028\"\n  },\n  \"payment\": {\n    \"method\": \"PUE\",\n    \"form\": \"03\",\n    \"conditions\": \"Contado\"\n  },\n  \"financial\": {\n    \"subtotal\": 10000.00,\n    \"totalTax\": 1600.00,\n    \"retentionIva\": 640.00,\n    \"retentionIvaRate\": 0.04,\n    \"retentionIsr\": 125.00,\n    \"retentionIsrRate\": 0.0125,\n    \"totalAmount\": 10835.00,\n    \"currency\": \"MXN\",\n    \"exchangeRate\": 1\n  },\n  \"items\": [\n    {\n      \"description\": \"Servicio de transporte de paquetería - Ruta CDMX-GDL\",\n      \"quantity\": 1,\n      \"unit\": \"E48\",\n      \"unitPrice\": 10000.00,\n      \"amount\": 10000.00,\n      \"productKey\": \"78101802\",\n      \"taxObject\": \"02\"\n    }\n  ],\n  \"contact\": {\n    \"email\": \"juan.perez@gmail.com\",\n    \"phone\": \"5512345678\"\n  },\n  \"files\": {\n    \"xml\": {\n      \"name\": \"factura.xml\",\n      \"content\": \"PD94bWwgdmVyc2lvbj0iMS4wIj8+PHRlc3Q+PC90ZXN0Pg==\",\n      \"mimeType\": \"application/xml\"\n    },\n    \"pdf\": {\n      \"name\": \"factura.pdf\",\n      \"content\": \"JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwo+PgplbmRvYmoKdHJhaWxlcgo8PAovUm9vdCAxIDAgUgo+Pg==\",\n      \"mimeType\": \"application/pdf\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoice",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice"]
+            },
+            "description": "Registra una factura con todos los campos completos incluyendo XML y PDF."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Log response time",
+          "console.log('Response time: ' + pm.response.responseTime + 'ms');",
+          "",
+          "// Check for JSON response",
+          "pm.test('Response is JSON', function () {",
+          "    pm.response.to.be.json;",
+          "});"
+        ]
+      }
+    }
+  ]
+}
