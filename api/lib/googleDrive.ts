@@ -35,20 +35,38 @@ export const getDriveClient = (): drive_v3.Drive => {
  */
 export const checkConnection = async (): Promise<boolean> => {
   try {
-    const drive = getDriveClient();
+    const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const privateKey = process.env.GOOGLE_PRIVATE_KEY;
     const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
     
+    // Log config status (without revealing secrets)
+    console.log('🔍 Google Drive Config Check:');
+    console.log('  - GOOGLE_SERVICE_ACCOUNT_EMAIL:', serviceAccountEmail ? `✅ (${serviceAccountEmail})` : '❌ MISSING');
+    console.log('  - GOOGLE_PRIVATE_KEY:', privateKey ? `✅ (${privateKey.length} chars)` : '❌ MISSING');
+    console.log('  - GOOGLE_DRIVE_ROOT_FOLDER_ID:', rootFolderId ? `✅ (${rootFolderId})` : '❌ MISSING');
+    
     if (!rootFolderId) {
+      console.error('❌ GOOGLE_DRIVE_ROOT_FOLDER_ID not configured');
       return false;
     }
     
+    const drive = getDriveClient();
+    
+    console.log('📂 Attempting to access root folder...');
     const response = await drive.files.get({
       fileId: rootFolderId,
       fields: 'id,name',
     });
     
+    console.log('✅ Google Drive connected! Folder:', response.data.name);
     return !!response.data.id;
-  } catch {
+  } catch (error) {
+    const err = error as Error & { code?: number; errors?: Array<{ message: string; reason: string }> };
+    console.error('❌ Google Drive connection failed:');
+    console.error('  - Error:', err.message);
+    if (err.errors) {
+      err.errors.forEach(e => console.error('  - Detail:', e.reason, '-', e.message));
+    }
     return false;
   }
 };
