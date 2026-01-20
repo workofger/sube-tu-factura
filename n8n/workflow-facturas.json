@@ -1,0 +1,692 @@
+{
+  "name": "FacturaFlow - Procesar Factura CFDI",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a1ed99cc-3561-4592-8459-3aad11492b03",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "webhookId": "a1ed99cc-3561-4592-8459-3aad11492b03"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, uuid FROM invoices WHERE uuid = '{{ $json.invoice.uuid }}' LIMIT 1",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Check UUID",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 400],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "uuid-check",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3",
+      "name": "UUID Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"DUPLICATE_INVOICE\",\n  \"message\": \"Esta factura ya fue registrada anteriormente.\",\n  \"uuid\": \"{{ $('Webhook').item.json.invoice.uuid }}\"\n}",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "id": "4",
+      "name": "Error Duplicado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar datos del driver desde el payload\nconst data = $('Webhook').item.json;\nconst issuer = data.issuer;\nconst contact = data.contact;\n\n// Dividir nombre en partes\nconst nameParts = (issuer.name || '').trim().split(' ');\nconst firstName = nameParts[0] || 'Sin nombre';\nconst lastName = nameParts.slice(1).join(' ') || '';\n\n// Extraer código de régimen fiscal (primeros 3 caracteres)\nconst regimeCode = issuer.regime ? issuer.regime.substring(0, 3) : null;\n\nreturn [{\n  json: {\n    rfc: issuer.rfc,\n    fiscal_name: issuer.name,\n    first_name: firstName,\n    last_name: lastName,\n    email: contact.email || `${issuer.rfc.toLowerCase()}@pendiente.com`,\n    phone: contact.phone || null,\n    fiscal_regime_code: regimeCode,\n    fiscal_zip_code: issuer.zipCode || null,\n    status: 'active'\n  }\n}];"
+      },
+      "id": "5",
+      "name": "Prepare Driver",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 520]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO drivers (rfc, fiscal_name, first_name, last_name, email, phone, fiscal_regime_code, fiscal_zip_code, status)\nVALUES (\n  '{{ $json.rfc }}',\n  '{{ $json.fiscal_name }}',\n  '{{ $json.first_name }}',\n  '{{ $json.last_name }}',\n  '{{ $json.email }}',\n  {{ $json.phone ? \"'\" + $json.phone + \"'\" : 'NULL' }},\n  {{ $json.fiscal_regime_code ? \"'\" + $json.fiscal_regime_code + \"'\" : 'NULL' }},\n  {{ $json.fiscal_zip_code ? \"'\" + $json.fiscal_zip_code + \"'\" : 'NULL' }},\n  '{{ $json.status }}'\n)\nON CONFLICT (rfc) DO UPDATE SET\n  fiscal_name = EXCLUDED.fiscal_name,\n  email = EXCLUDED.email,\n  phone = COALESCE(EXCLUDED.phone, drivers.phone),\n  fiscal_regime_code = COALESCE(EXCLUDED.fiscal_regime_code, drivers.fiscal_regime_code),\n  fiscal_zip_code = COALESCE(EXCLUDED.fiscal_zip_code, drivers.fiscal_zip_code),\n  updated_at = NOW()\nRETURNING id, rfc;",
+        "options": {}
+      },
+      "id": "6",
+      "name": "Upsert Driver",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1120, 520],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, code, name FROM projects WHERE UPPER(name) LIKE UPPER('%{{ $('Webhook').item.json.project }}%') OR UPPER(code) LIKE UPPER('%{{ $('Webhook').item.json.project.replace(/ /g, '_') }}%') LIMIT 1",
+        "options": {}
+      },
+      "id": "7",
+      "name": "Get Project",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1340, 520],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar datos de la factura\nconst webhook = $('Webhook').item.json;\nconst driverId = $('Upsert Driver').item.json.id;\nconst projectId = $('Get Project').item.json?.id || null;\n\nconst invoice = webhook.invoice;\nconst issuer = webhook.issuer;\nconst receiver = webhook.receiver;\nconst payment = webhook.payment;\nconst financial = webhook.financial;\n\n// Calcular año de la factura\nconst invoiceYear = new Date(invoice.date).getFullYear();\n\n// Escapar comillas simples para SQL\nconst escapeSQL = (str) => str ? str.replace(/'/g, \"''\") : null;\n\nreturn [{\n  json: {\n    driver_id: driverId,\n    project_id: projectId,\n    uuid: invoice.uuid,\n    folio: escapeSQL(invoice.folio) || null,\n    series: escapeSQL(invoice.series) || null,\n    invoice_date: invoice.date,\n    certification_date: invoice.certificationDate || null,\n    sat_cert_number: invoice.satCertNumber || null,\n    issuer_rfc: issuer.rfc,\n    issuer_name: escapeSQL(issuer.name),\n    issuer_regime: escapeSQL(issuer.regime) || null,\n    issuer_zip_code: issuer.zipCode || null,\n    receiver_rfc: receiver.rfc,\n    receiver_name: escapeSQL(receiver.name) || null,\n    receiver_regime: escapeSQL(receiver.regime) || null,\n    receiver_zip_code: receiver.zipCode || null,\n    cfdi_use: receiver.cfdiUse || null,\n    payment_method: payment.method,\n    payment_form: payment.form || null,\n    payment_conditions: escapeSQL(payment.conditions) || null,\n    subtotal: financial.subtotal || 0,\n    total_tax: financial.totalTax || 0,\n    retention_iva: financial.retentionIva || 0,\n    retention_iva_rate: financial.retentionIvaRate || 0,\n    retention_isr: financial.retentionIsr || 0,\n    retention_isr_rate: financial.retentionIsrRate || 0,\n    total_amount: financial.totalAmount,\n    currency: financial.currency || 'MXN',\n    exchange_rate: financial.exchangeRate || 1,\n    payment_week: parseInt(webhook.week) || null,\n    payment_year: invoiceYear,\n    contact_email: webhook.contact?.email || null,\n    contact_phone: webhook.contact?.phone || null\n  }\n}];"
+      },
+      "id": "8",
+      "name": "Prepare Invoice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 520]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO invoices (\n  driver_id, project_id, uuid, folio, series, invoice_date, certification_date, sat_cert_number,\n  issuer_rfc, issuer_name, issuer_regime, issuer_zip_code,\n  receiver_rfc, receiver_name, receiver_regime, receiver_zip_code, cfdi_use,\n  payment_method, payment_form, payment_conditions,\n  subtotal, total_tax, retention_iva, retention_iva_rate, retention_isr, retention_isr_rate,\n  total_amount, currency, exchange_rate, payment_week, payment_year,\n  contact_email, contact_phone, status\n) VALUES (\n  '{{ $json.driver_id }}',\n  {{ $json.project_id ? \"'\" + $json.project_id + \"'\" : 'NULL' }},\n  '{{ $json.uuid }}',\n  {{ $json.folio ? \"'\" + $json.folio + \"'\" : 'NULL' }},\n  {{ $json.series ? \"'\" + $json.series + \"'\" : 'NULL' }},\n  '{{ $json.invoice_date }}',\n  {{ $json.certification_date ? \"'\" + $json.certification_date + \"'\" : 'NULL' }},\n  {{ $json.sat_cert_number ? \"'\" + $json.sat_cert_number + \"'\" : 'NULL' }},\n  '{{ $json.issuer_rfc }}',\n  '{{ $json.issuer_name }}',\n  {{ $json.issuer_regime ? \"'\" + $json.issuer_regime + \"'\" : 'NULL' }},\n  {{ $json.issuer_zip_code ? \"'\" + $json.issuer_zip_code + \"'\" : 'NULL' }},\n  '{{ $json.receiver_rfc }}',\n  {{ $json.receiver_name ? \"'\" + $json.receiver_name + \"'\" : 'NULL' }},\n  {{ $json.receiver_regime ? \"'\" + $json.receiver_regime + \"'\" : 'NULL' }},\n  {{ $json.receiver_zip_code ? \"'\" + $json.receiver_zip_code + \"'\" : 'NULL' }},\n  {{ $json.cfdi_use ? \"'\" + $json.cfdi_use + \"'\" : 'NULL' }},\n  '{{ $json.payment_method }}',\n  {{ $json.payment_form ? \"'\" + $json.payment_form + \"'\" : 'NULL' }},\n  {{ $json.payment_conditions ? \"'\" + $json.payment_conditions + \"'\" : 'NULL' }},\n  {{ $json.subtotal }},\n  {{ $json.total_tax }},\n  {{ $json.retention_iva }},\n  {{ $json.retention_iva_rate }},\n  {{ $json.retention_isr }},\n  {{ $json.retention_isr_rate }},\n  {{ $json.total_amount }},\n  '{{ $json.currency }}',\n  {{ $json.exchange_rate }},\n  {{ $json.payment_week || 'NULL' }},\n  {{ $json.payment_year }},\n  {{ $json.contact_email ? \"'\" + $json.contact_email + \"'\" : 'NULL' }},\n  {{ $json.contact_phone ? \"'\" + $json.contact_phone + \"'\" : 'NULL' }},\n  'pending_review'\n) RETURNING id, uuid;",
+        "options": {}
+      },
+      "id": "9",
+      "name": "Insert Invoice",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1780, 520],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar items de la factura\nconst webhook = $('Webhook').item.json;\nconst invoiceId = $('Insert Invoice').item.json.id;\nconst items = webhook.items || [];\n\nif (items.length === 0) {\n  return [{ json: { skip: true, invoiceId } }];\n}\n\n// Escapar comillas simples para SQL\nconst escapeSQL = (str) => str ? str.replace(/'/g, \"''\") : null;\n\nreturn items.map((item, index) => ({\n  json: {\n    invoice_id: invoiceId,\n    description: escapeSQL(item.description) || 'Sin descripción',\n    quantity: item.quantity || 1,\n    unit: item.unit || null,\n    unit_price: item.unitPrice || 0,\n    amount: item.amount || 0,\n    product_key: item.productKey || null,\n    tax_object: item.taxObject || null,\n    line_number: index + 1\n  }\n}));"
+      },
+      "id": "10",
+      "name": "Prepare Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 520]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "skip-check",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "11",
+      "name": "Has Items?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2220, 520]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO invoice_items (invoice_id, description, quantity, unit, unit_price, amount, product_key, tax_object, line_number)\nVALUES (\n  '{{ $json.invoice_id }}',\n  '{{ $json.description }}',\n  {{ $json.quantity }},\n  {{ $json.unit ? \"'\" + $json.unit + \"'\" : 'NULL' }},\n  {{ $json.unit_price }},\n  {{ $json.amount }},\n  {{ $json.product_key ? \"'\" + $json.product_key + \"'\" : 'NULL' }},\n  {{ $json.tax_object ? \"'\" + $json.tax_object + \"'\" : 'NULL' }},\n  {{ $json.line_number }}\n) RETURNING id;",
+        "options": {}
+      },
+      "id": "12",
+      "name": "Insert Items",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2440, 640],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar estructura de carpetas\nconst webhook = $('Webhook').item.json;\nconst invoiceId = $('Insert Invoice').item.json.id;\n\n// Datos de la factura\nconst week = String(webhook.week || '00').padStart(2, '0');\nconst year = new Date(webhook.invoice.date).getFullYear();\nconst project = webhook.project || 'OTRO';\nconst issuerRfc = webhook.issuer.rfc;\nconst issuerName = (webhook.issuer.name || '').substring(0, 50).replace(/[<>:\"/\\\\|?*]/g, '');\n\n// Nombres de carpetas\nconst weekFolder = `Semana ${week} - ${year}`;\nconst projectFolder = project.toUpperCase().replace(/[<>:\"/\\\\|?*]/g, '');\nconst issuerFolder = `${issuerRfc} - ${issuerName}`;\n\n// UUID para nombres de archivo\nconst uuid = webhook.invoice.uuid;\n\nreturn [{\n  json: {\n    invoiceId,\n    weekFolder,\n    projectFolder,\n    issuerFolder,\n    issuerRfc,\n    uuid,\n    xmlFile: webhook.files?.xml,\n    pdfFile: webhook.files?.pdf\n  }\n}];"
+      },
+      "id": "13",
+      "name": "Prepare Folders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2660, 520]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "search",
+        "queryString": "=mimeType='application/vnd.google-apps.folder' and name='{{ $json.weekFolder }}' and '{{ $env.GOOGLE_DRIVE_ROOT_FOLDER_ID }}' in parents and trashed=false",
+        "limit": 1,
+        "options": {}
+      },
+      "id": "14",
+      "name": "Search Week Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2880, 520],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "folder-check",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "15",
+      "name": "Week Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3100, 520]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "createFolder",
+        "name": "={{ $('Prepare Folders').item.json.weekFolder }}",
+        "options": {
+          "folderColorRgb": "#f4b400",
+          "parents": ["={{ $env.GOOGLE_DRIVE_ROOT_FOLDER_ID }}"]
+        }
+      },
+      "id": "16",
+      "name": "Create Week Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3320, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge week folder ID\nlet weekFolderId;\n\ntry {\n  weekFolderId = $('Create Week Folder').item?.json?.id;\n} catch(e) {\n  weekFolderId = null;\n}\n\nif (!weekFolderId) {\n  try {\n    weekFolderId = $('Search Week Folder').item?.json?.id;\n  } catch(e) {\n    weekFolderId = null;\n  }\n}\n\nconst folderData = $('Prepare Folders').item.json;\n\nreturn [{\n  json: {\n    ...folderData,\n    weekFolderId\n  }\n}];"
+      },
+      "id": "17",
+      "name": "Merge Week ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3540, 520]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "search",
+        "queryString": "=mimeType='application/vnd.google-apps.folder' and name='{{ $json.projectFolder }}' and '{{ $json.weekFolderId }}' in parents and trashed=false",
+        "limit": 1,
+        "options": {}
+      },
+      "id": "18",
+      "name": "Search Project Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3760, 520],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "folder-check",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "19",
+      "name": "Project Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3980, 520]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "createFolder",
+        "name": "={{ $('Merge Week ID').item.json.projectFolder }}",
+        "options": {
+          "folderColorRgb": "#4285f4",
+          "parents": ["={{ $('Merge Week ID').item.json.weekFolderId }}"]
+        }
+      },
+      "id": "20",
+      "name": "Create Project Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [4200, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge project folder ID\nlet projectFolderId;\n\ntry {\n  projectFolderId = $('Create Project Folder').item?.json?.id;\n} catch(e) {\n  projectFolderId = null;\n}\n\nif (!projectFolderId) {\n  try {\n    projectFolderId = $('Search Project Folder').item?.json?.id;\n  } catch(e) {\n    projectFolderId = null;\n  }\n}\n\nconst folderData = $('Merge Week ID').item.json;\n\nreturn [{\n  json: {\n    ...folderData,\n    projectFolderId\n  }\n}];"
+      },
+      "id": "21",
+      "name": "Merge Project ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4420, 520]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "search",
+        "queryString": "=mimeType='application/vnd.google-apps.folder' and name contains '{{ $json.issuerRfc }}' and '{{ $json.projectFolderId }}' in parents and trashed=false",
+        "limit": 1,
+        "options": {}
+      },
+      "id": "22",
+      "name": "Search Issuer Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [4640, 520],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "folder-check",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notExists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "23",
+      "name": "Issuer Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [4860, 520]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "createFolder",
+        "name": "={{ $('Merge Project ID').item.json.issuerFolder }}",
+        "options": {
+          "folderColorRgb": "#0f9d58",
+          "parents": ["={{ $('Merge Project ID').item.json.projectFolderId }}"]
+        }
+      },
+      "id": "24",
+      "name": "Create Issuer Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [5080, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge issuer folder ID\nlet issuerFolderId;\n\ntry {\n  issuerFolderId = $('Create Issuer Folder').item?.json?.id;\n} catch(e) {\n  issuerFolderId = null;\n}\n\nif (!issuerFolderId) {\n  try {\n    issuerFolderId = $('Search Issuer Folder').item?.json?.id;\n  } catch(e) {\n    issuerFolderId = null;\n  }\n}\n\nconst folderData = $('Merge Project ID').item.json;\n\nreturn [{\n  json: {\n    ...folderData,\n    issuerFolderId\n  }\n}];"
+      },
+      "id": "25",
+      "name": "Merge Issuer ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5300, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar archivos para subir\nconst data = $json;\nconst files = [];\n\nif (data.xmlFile && data.xmlFile.content) {\n  files.push({\n    fileName: `${data.uuid}.xml`,\n    fileContent: data.xmlFile.content,\n    mimeType: 'application/xml',\n    folderId: data.issuerFolderId,\n    invoiceId: data.invoiceId,\n    fileType: 'xml'\n  });\n}\n\nif (data.pdfFile && data.pdfFile.content) {\n  files.push({\n    fileName: `${data.uuid}.pdf`,\n    fileContent: data.pdfFile.content,\n    mimeType: 'application/pdf',\n    folderId: data.issuerFolderId,\n    invoiceId: data.invoiceId,\n    fileType: 'pdf'\n  });\n}\n\nif (files.length === 0) {\n  return [{ json: { noFiles: true, invoiceId: data.invoiceId } }];\n}\n\nreturn files.map(f => ({ json: f }));"
+      },
+      "id": "26",
+      "name": "Prepare Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5520, 520]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "files-check",
+              "leftValue": "={{ $json.noFiles }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "27",
+      "name": "Has Files?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [5740, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convertir Base64 a Buffer para subir a Drive\nconst file = $json;\n\n// Decodificar base64 a buffer\nconst buffer = Buffer.from(file.fileContent, 'base64');\n\nreturn [{\n  json: {\n    fileName: file.fileName,\n    folderId: file.folderId,\n    invoiceId: file.invoiceId,\n    fileType: file.fileType,\n    mimeType: file.mimeType\n  },\n  binary: {\n    data: {\n      data: buffer.toString('base64'),\n      mimeType: file.mimeType,\n      fileName: file.fileName\n    }\n  }\n}];"
+      },
+      "id": "28",
+      "name": "Convert Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5960, 640]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "name": "={{ $json.fileName }}",
+        "parents": ["={{ $json.folderId }}"],
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "29",
+      "name": "Upload Files",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [6180, 640],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL_ID",
+          "name": "Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Agregar resultados de archivos subidos\nconst allItems = $input.all();\n\n// Buscar invoiceId\nlet invoiceId;\ntry {\n  invoiceId = $('Prepare Files').first().json.invoiceId;\n} catch(e) {\n  invoiceId = allItems[0]?.json?.invoiceId;\n}\n\nconst xmlFile = allItems.find(i => i.json.name?.endsWith('.xml'));\nconst pdfFile = allItems.find(i => i.json.name?.endsWith('.pdf'));\n\nreturn [{\n  json: {\n    invoiceId,\n    xmlDriveId: xmlFile?.json?.id || null,\n    xmlDriveUrl: xmlFile?.json?.webViewLink || null,\n    pdfDriveId: pdfFile?.json?.id || null,\n    pdfDriveUrl: pdfFile?.json?.webViewLink || null\n  }\n}];"
+      },
+      "id": "30",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [6400, 640]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO invoice_files (invoice_id, file_type, file_name, file_path, google_drive_id, google_drive_url, mime_type)\nVALUES (\n  '{{ $json.invoiceId }}',\n  'xml',\n  '{{ $('Webhook').item.json.invoice.uuid }}.xml',\n  '{{ $json.xmlDriveUrl }}',\n  '{{ $json.xmlDriveId }}',\n  '{{ $json.xmlDriveUrl }}',\n  'application/xml'\n)\nON CONFLICT (invoice_id, file_type) DO UPDATE SET\n  file_path = EXCLUDED.file_path,\n  google_drive_id = EXCLUDED.google_drive_id,\n  google_drive_url = EXCLUDED.google_drive_url;",
+        "options": {}
+      },
+      "id": "31",
+      "name": "Save XML Record",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [6620, 520],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO invoice_files (invoice_id, file_type, file_name, file_path, google_drive_id, google_drive_url, mime_type)\nVALUES (\n  '{{ $('Aggregate Results').item.json.invoiceId }}',\n  'pdf',\n  '{{ $('Webhook').item.json.invoice.uuid }}.pdf',\n  '{{ $('Aggregate Results').item.json.pdfDriveUrl }}',\n  '{{ $('Aggregate Results').item.json.pdfDriveId }}',\n  '{{ $('Aggregate Results').item.json.pdfDriveUrl }}',\n  'application/pdf'\n)\nON CONFLICT (invoice_id, file_type) DO UPDATE SET\n  file_path = EXCLUDED.file_path,\n  google_drive_id = EXCLUDED.google_drive_id,\n  google_drive_url = EXCLUDED.google_drive_url;",
+        "options": {}
+      },
+      "id": "32",
+      "name": "Save PDF Record",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [6620, 700],
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "Supabase Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"¡Factura registrada exitosamente!\",\n  \"data\": {\n    \"invoiceId\": \"{{ $('Insert Invoice').item.json.id }}\",\n    \"uuid\": \"{{ $('Webhook').item.json.invoice.uuid }}\",\n    \"status\": \"pending_review\",\n    \"issuer\": \"{{ $('Webhook').item.json.issuer.name }}\",\n    \"total\": {{ $('Webhook').item.json.financial.totalAmount }},\n    \"files\": {\n      \"xml\": \"{{ $('Aggregate Results').item.json.xmlDriveUrl || '' }}\",\n      \"pdf\": \"{{ $('Aggregate Results').item.json.pdfDriveUrl || '' }}\"\n    }\n  }\n}",
+        "options": {
+          "responseCode": 201,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "33",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [6840, 620]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"¡Factura registrada exitosamente! (Sin archivos adjuntos)\",\n  \"data\": {\n    \"invoiceId\": \"{{ $('Insert Invoice').item.json.id }}\",\n    \"uuid\": \"{{ $('Webhook').item.json.invoice.uuid }}\",\n    \"status\": \"pending_review\"\n  }\n}",
+        "options": {
+          "responseCode": 201
+        }
+      },
+      "id": "34",
+      "name": "Success No Files",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [5960, 400]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Check UUID", "type": "main", "index": 0 }]] },
+    "Check UUID": { "main": [[{ "node": "UUID Exists?", "type": "main", "index": 0 }]] },
+    "UUID Exists?": {
+      "main": [
+        [{ "node": "Error Duplicado", "type": "main", "index": 0 }],
+        [{ "node": "Prepare Driver", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Driver": { "main": [[{ "node": "Upsert Driver", "type": "main", "index": 0 }]] },
+    "Upsert Driver": { "main": [[{ "node": "Get Project", "type": "main", "index": 0 }]] },
+    "Get Project": { "main": [[{ "node": "Prepare Invoice", "type": "main", "index": 0 }]] },
+    "Prepare Invoice": { "main": [[{ "node": "Insert Invoice", "type": "main", "index": 0 }]] },
+    "Insert Invoice": { "main": [[{ "node": "Prepare Items", "type": "main", "index": 0 }]] },
+    "Prepare Items": { "main": [[{ "node": "Has Items?", "type": "main", "index": 0 }]] },
+    "Has Items?": {
+      "main": [
+        [{ "node": "Prepare Folders", "type": "main", "index": 0 }],
+        [{ "node": "Insert Items", "type": "main", "index": 0 }]
+      ]
+    },
+    "Insert Items": { "main": [[{ "node": "Prepare Folders", "type": "main", "index": 0 }]] },
+    "Prepare Folders": { "main": [[{ "node": "Search Week Folder", "type": "main", "index": 0 }]] },
+    "Search Week Folder": { "main": [[{ "node": "Week Exists?", "type": "main", "index": 0 }]] },
+    "Week Exists?": {
+      "main": [
+        [{ "node": "Create Week Folder", "type": "main", "index": 0 }],
+        [{ "node": "Merge Week ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Week Folder": { "main": [[{ "node": "Merge Week ID", "type": "main", "index": 0 }]] },
+    "Merge Week ID": { "main": [[{ "node": "Search Project Folder", "type": "main", "index": 0 }]] },
+    "Search Project Folder": { "main": [[{ "node": "Project Exists?", "type": "main", "index": 0 }]] },
+    "Project Exists?": {
+      "main": [
+        [{ "node": "Create Project Folder", "type": "main", "index": 0 }],
+        [{ "node": "Merge Project ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Project Folder": { "main": [[{ "node": "Merge Project ID", "type": "main", "index": 0 }]] },
+    "Merge Project ID": { "main": [[{ "node": "Search Issuer Folder", "type": "main", "index": 0 }]] },
+    "Search Issuer Folder": { "main": [[{ "node": "Issuer Exists?", "type": "main", "index": 0 }]] },
+    "Issuer Exists?": {
+      "main": [
+        [{ "node": "Create Issuer Folder", "type": "main", "index": 0 }],
+        [{ "node": "Merge Issuer ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Issuer Folder": { "main": [[{ "node": "Merge Issuer ID", "type": "main", "index": 0 }]] },
+    "Merge Issuer ID": { "main": [[{ "node": "Prepare Files", "type": "main", "index": 0 }]] },
+    "Prepare Files": { "main": [[{ "node": "Has Files?", "type": "main", "index": 0 }]] },
+    "Has Files?": {
+      "main": [
+        [{ "node": "Success No Files", "type": "main", "index": 0 }],
+        [{ "node": "Convert Base64", "type": "main", "index": 0 }]
+      ]
+    },
+    "Convert Base64": { "main": [[{ "node": "Upload Files", "type": "main", "index": 0 }]] },
+    "Upload Files": { "main": [[{ "node": "Aggregate Results", "type": "main", "index": 0 }]] },
+    "Aggregate Results": {
+      "main": [
+        [
+          { "node": "Save XML Record", "type": "main", "index": 0 },
+          { "node": "Save PDF Record", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Save PDF Record": { "main": [[{ "node": "Success Response", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1
+}

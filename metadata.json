@@ -1,0 +1,5 @@
+{
+  "name": "FacturaFlow AI",
+  "description": "An intelligent invoice processing application that uses Google Gemini to automatically extract and validate data from PDF and XML invoices.",
+  "requestFramePermissions": []
+}
