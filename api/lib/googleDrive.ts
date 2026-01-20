@@ -21,7 +21,7 @@ export const getDriveClient = (): drive_v3.Drive => {
         client_email: serviceAccountEmail,
         private_key: privateKey,
       },
-      scopes: ['https://www.googleapis.com/auth/drive.file'],
+      scopes: ['https://www.googleapis.com/auth/drive'],
     });
     
     driveClient = google.drive({ version: 'v3', auth });
