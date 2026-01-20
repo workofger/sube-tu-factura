@@ -1,0 +1,169 @@
+# FacturaFlow AI - Cursor Rules
+
+## Project Overview
+
+FacturaFlow AI is a web application for processing Mexican CFDI invoices (Comprobante Fiscal Digital por Internet). It uses AI to extract data from XML/PDF files, stores them in Supabase, and organizes files in Google Drive.
+
+## Tech Stack
+
+### Frontend (src/)
+- **React 18** + TypeScript
+- **Vite** for bundling
+- **Tailwind CSS** for styling
+- **Lucide React** for icons
+
+### Backend (api/)
+- **Vercel Serverless Functions** (Node.js 20)
+- **Supabase** (PostgreSQL) for database
+- **Google Drive API** for file storage
+- **OpenAI GPT-4o** for invoice data extraction
+
+## Project Structure
+
+```
+sube-tu-factura/
+├── api/                    # Vercel Serverless Functions
+│   ├── health.ts          # GET /api/health - Service health check
+│   ├── invoice.ts         # POST /api/invoice - Process invoice
+│   ├── projects.ts        # GET /api/projects - Get projects list
+│   ├── validate.ts        # POST /api/validate - Check UUID exists
+│   └── lib/
+│       ├── supabase.ts    # Supabase client + DB operations
+│       ├── googleDrive.ts # Google Drive client + file ops
+│       ├── validators.ts  # Input validation functions
+│       └── types.ts       # TypeScript interfaces
+│
+├── src/                    # React Frontend
+│   ├── components/
+│   │   ├── common/        # Reusable: FileUpload, InputField, SelectField
+│   │   ├── layout/        # Header, WhatsAppButton
+│   │   └── sections/      # Form sections: Fiscal, Payment, Items
+│   ├── hooks/
+│   │   ├── useInvoiceForm.ts      # Form state management
+│   │   ├── useInvoiceExtraction.ts # AI extraction logic
+│   │   ├── useProjects.ts         # Fetch projects from API
+│   │   └── useWeekOptions.ts      # Week selector options
+│   ├── services/
+│   │   ├── openaiService.ts   # OpenAI GPT-4o integration
+│   │   └── webhookService.ts  # Backend API communication
+│   ├── types/
+│   │   └── invoice.ts     # Invoice data types
+│   └── utils/
+│       ├── dates.ts       # Date utilities
+│       ├── files.ts       # File handling (Base64, etc)
+│       └── formatters.ts  # Number/string formatters
+│
+├── database/               # SQL migrations
+│   ├── 001_initial_schema.sql
+│   ├── 002_add_flotilleros.sql
+│   └── schema.md          # Full DB documentation
+│
+└── docs/api/              # API documentation
+    ├── README.md
+    ├── SETUP.md
+    ├── openapi.yaml
+    └── postman.json
+```
+
+## Data Model
+
+### Key Entities
+
+1. **flotilleros** - Invoice issuers (fleet owners or independent drivers)
+   - Can be type 'flotillero' (has multiple drivers) or 'independiente'
+   
+2. **drivers** - Delivery operators
+   - Can belong to a flotillero (flotillero_id) or be independent
+   
+3. **invoices** - CFDI invoice records
+   - biller_id: Who issued the invoice (flotillero)
+   - operated_by_driver_id: Who did the work (optional)
+   
+4. **projects** - Client projects (Mercado Libre, Amazon, etc.)
+
+### Relationships
+```
+flotilleros 1:N drivers
+flotilleros 1:N invoices (as biller)
+drivers N:1 invoices
+projects 1:N invoices
+```
+
+## Environment Variables
+
+### Frontend (exposed via VITE_)
+```
+VITE_OPENAI_API_KEY=sk-...     # OpenAI API key for extraction
+```
+
+### Backend (server-side only)
+```
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+GOOGLE_SERVICE_ACCOUNT_EMAIL=xxx@project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
+GOOGLE_DRIVE_ROOT_FOLDER_ID=1AbCd...
+EXPECTED_RECEIVER_RFC=BLI180227F23
+```
+
+## Code Conventions
+
+### TypeScript
+- Use explicit types, avoid `any`
+- Interfaces in `/types/` or `/lib/types.ts`
+- Use `.js` extension in API imports (ES modules requirement)
+
+### React Components
+- Functional components with hooks
+- Props interfaces defined inline or in types/
+- Use Tailwind for styling (no CSS files)
+
+### API Functions
+- Export default handler function
+- Always set CORS headers
+- Return consistent response format: `{ success, message, data?, error?, details? }`
+
+### Error Handling
+- Wrap async operations in try/catch
+- Log errors with console.error
+- Return user-friendly error messages in Spanish
+
+## Google Drive Structure
+
+Files are organized in a 3-level hierarchy:
+```
+📁 Root Folder/
+├── 📁 Semana_01_2026/           # Week folder
+│   ├── 📁 MERCADO_LIBRE/        # Project folder
+│   │   └── 📁 RFC_Name/         # Issuer folder
+│   │       ├── uuid.xml
+│   │       └── uuid.pdf
+```
+
+## Common Tasks
+
+### Adding a new API endpoint
+1. Create `api/endpoint.ts`
+2. Import with `.js` extension
+3. Add CORS headers
+4. Document in `docs/api/openapi.yaml`
+
+### Adding a new form field
+1. Update `types/invoice.ts` with new field
+2. Add to form state in `useInvoiceForm.ts`
+3. Add extraction in `openaiService.ts` prompt
+4. Add input in appropriate section component
+
+### Modifying the database
+1. Create new migration in `database/`
+2. Update `database/schema.md`
+3. Update `api/lib/types.ts`
+4. Update `api/lib/supabase.ts` functions
+
+## Important Notes
+
+- **ES Modules**: The project uses ES modules. API imports MUST use `.js` extensions.
+- **Vercel Functions**: Each file in `api/` becomes a serverless function.
+- **No SSR**: This is a client-side React app with API routes.
+- **Spanish UI**: User-facing text should be in Spanish.
+- **Mexican Invoices**: Focus on CFDI 4.0 format specifics.
