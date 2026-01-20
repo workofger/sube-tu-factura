@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { checkUuidExists } from './lib/supabase';
-import { validateUuidRequest } from './lib/validators';
-import { ValidateResponse, ApiResponse } from './lib/types';
+import { checkUuidExists } from './lib/supabase.js';
+import { validateUuidRequest } from './lib/validators.js';
+import { ValidateResponse, ApiResponse } from './lib/types.js';
 
 /**
  * POST /api/validate

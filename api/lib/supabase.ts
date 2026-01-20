@@ -6,7 +6,7 @@ import {
   DbFlotillero,
   InvoicePayload,
   InvoiceItem 
-} from './types';
+} from './types.js';
 
 // Initialize Supabase client with Service Role Key
 const supabaseUrl = process.env.SUPABASE_URL!;

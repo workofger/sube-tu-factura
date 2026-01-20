@@ -1,4 +1,4 @@
-import { InvoicePayload } from './types';
+import { InvoicePayload } from './types.js';
 
 export interface ValidationResult {
   valid: boolean;

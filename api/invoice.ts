@@ -6,10 +6,10 @@ import {
   insertInvoice, 
   insertInvoiceItems,
   saveFileRecord 
-} from './lib/supabase';
-import { uploadInvoiceFiles } from './lib/googleDrive';
-import { validateInvoicePayload } from './lib/validators';
-import { InvoicePayload, ApiResponse, InvoiceSuccessData } from './lib/types';
+} from './lib/supabase.js';
+import { uploadInvoiceFiles } from './lib/googleDrive.js';
+import { validateInvoicePayload } from './lib/validators.js';
+import { InvoicePayload, ApiResponse, InvoiceSuccessData } from './lib/types.js';
 
 /**
  * POST /api/invoice

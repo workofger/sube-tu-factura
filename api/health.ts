@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { checkConnection as checkSupabase } from './lib/supabase';
-import { checkConnection as checkDrive } from './lib/googleDrive';
-import { HealthResponse } from './lib/types';
+import { checkConnection as checkSupabase } from './lib/supabase.js';
+import { checkConnection as checkDrive } from './lib/googleDrive.js';
+import { HealthResponse } from './lib/types.js';
 
 /**
  * GET /api/health
