@@ -5,7 +5,7 @@ interface ImportMetaEnv {
   readonly PROD: boolean;
   readonly MODE: string;
   readonly BASE_URL: string;
-  readonly VITE_OPENAI_API_KEY?: string;
+  // Note: No frontend env vars needed - all API keys are server-side only
 }
 
 interface ImportMeta {

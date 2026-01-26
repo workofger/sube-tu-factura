@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { InvoiceData } from '../types/invoice';
 import { extractInvoiceData } from '../services/openaiService';
 import { CONFIG } from '../constants/config';
@@ -19,6 +19,9 @@ interface UseInvoiceExtractionProps {
   onValidationAlert?: (alert: ValidationAlert) => void;
 }
 
+// Maximum number of extraction attempts per file pair
+const MAX_EXTRACTION_ATTEMPTS = 1;
+
 export const useInvoiceExtraction = ({ 
   formData, 
   setFormData, 
@@ -30,14 +33,17 @@ export const useInvoiceExtraction = ({
   const [extractSuccess, setExtractSuccess] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   
-  // Track if extraction was already attempted for current files
-  // This prevents infinite loops when validation fails
-  const extractionAttemptedRef = useRef<string | null>(null);
+  // Track extraction attempts with both ref (for sync checks) and state (for effect deps)
+  const extractionAttemptsRef = useRef<Map<string, number>>(new Map());
+  const [attemptedFileKey, setAttemptedFileKey] = useState<string | null>(null);
+  
+  // Flag to prevent any extraction while one is in progress
+  const isProcessingRef = useRef(false);
 
   // Generate a unique key for current file pair
   const getFileKey = useCallback((xmlFile: File | null, pdfFile: File | null): string | null => {
     if (!xmlFile || !pdfFile) return null;
-    return `${xmlFile.name}-${xmlFile.lastModified}-${pdfFile.name}-${pdfFile.lastModified}`;
+    return `${xmlFile.name}-${xmlFile.size}-${pdfFile.name}-${pdfFile.size}`;
   }, []);
 
   // Check if UUID already exists in database
@@ -52,13 +58,13 @@ export const useInvoiceExtraction = ({
       return data.exists === true;
     } catch (error) {
       console.error('Error checking UUID:', error);
-      return false; // Assume doesn't exist on error, will catch at submission
+      return false;
     }
   }, []);
 
   // Validate project exists in database
   const validateProject = useCallback((projectName: string): boolean => {
-    if (!projectName || projects.length === 0) return true; // Skip if no data
+    if (!projectName || projects.length === 0) return true;
     
     const normalizedName = projectName.toUpperCase().replace(/ /g, '_');
     return projects.some(p => 
@@ -67,20 +73,49 @@ export const useInvoiceExtraction = ({
     );
   }, [projects]);
 
-  const handleExtraction = useCallback(async () => {
-    if (!formData.xmlFile || !formData.pdfFile) return;
+  // Check if extraction can be attempted
+  const canAttemptExtraction = useCallback((): boolean => {
+    if (!formData.xmlFile || !formData.pdfFile) return false;
+    if (isProcessingRef.current) return false;
     
-    // Check if we already attempted extraction for these exact files
     const currentFileKey = getFileKey(formData.xmlFile, formData.pdfFile);
-    if (currentFileKey && extractionAttemptedRef.current === currentFileKey) {
-      console.log('⚠️ Extraction already attempted for these files, skipping');
+    if (!currentFileKey) return false;
+    
+    const attempts = extractionAttemptsRef.current.get(currentFileKey) || 0;
+    return attempts < MAX_EXTRACTION_ATTEMPTS;
+  }, [formData.xmlFile, formData.pdfFile, getFileKey]);
+
+  const handleExtraction = useCallback(async () => {
+    // Double-check we can attempt extraction
+    if (!formData.xmlFile || !formData.pdfFile) {
+      console.log('⚠️ No files to extract');
       return;
     }
     
-    // Mark extraction as attempted for these files BEFORE starting
-    if (currentFileKey) {
-      extractionAttemptedRef.current = currentFileKey;
+    // Prevent concurrent extractions
+    if (isProcessingRef.current) {
+      console.log('⚠️ Extraction already in progress, skipping');
+      return;
     }
+    
+    const currentFileKey = getFileKey(formData.xmlFile, formData.pdfFile);
+    if (!currentFileKey) return;
+    
+    // Check attempt count BEFORE starting
+    const currentAttempts = extractionAttemptsRef.current.get(currentFileKey) || 0;
+    if (currentAttempts >= MAX_EXTRACTION_ATTEMPTS) {
+      console.log(`⚠️ Max extraction attempts (${MAX_EXTRACTION_ATTEMPTS}) reached for these files`);
+      return;
+    }
+    
+    // Mark as processing IMMEDIATELY to prevent race conditions
+    isProcessingRef.current = true;
+    
+    // Increment attempt counter IMMEDIATELY
+    extractionAttemptsRef.current.set(currentFileKey, currentAttempts + 1);
+    setAttemptedFileKey(currentFileKey);
+    
+    console.log(`📋 Starting extraction attempt ${currentAttempts + 1}/${MAX_EXTRACTION_ATTEMPTS} for: ${currentFileKey}`);
     
     // Step 1: Validate filenames match
     const filenameValidation = validateMatchingFilenames(formData.xmlFile, formData.pdfFile);
@@ -90,6 +125,7 @@ export const useInvoiceExtraction = ({
         title: 'Nombres de archivo no coinciden',
         message: filenameValidation.error || 'Los archivos XML y PDF deben tener el mismo nombre.'
       });
+      isProcessingRef.current = false;
       return;
     }
 
@@ -105,6 +141,7 @@ export const useInvoiceExtraction = ({
         const exists = await checkUuidExists(uuid);
         if (exists) {
           setIsValidating(false);
+          isProcessingRef.current = false;
           onValidationAlert?.({
             type: 'error',
             title: 'Factura ya registrada',
@@ -133,6 +170,7 @@ export const useInvoiceExtraction = ({
           message: `El proyecto "${data.project}" no está registrado en el sistema. Contacta al administrador.`,
         });
         setIsExtracting(false);
+        isProcessingRef.current = false;
         return;
       }
 
@@ -145,9 +183,7 @@ export const useInvoiceExtraction = ({
             title: 'Período de carga vencido',
             message: weekValidation.error || 'La fecha de factura corresponde a una semana que ya no está activa.',
           });
-          setIsExtracting(false);
-          // Don't return here - we still want to show the data but prevent submission
-          // The validation will block submission anyway
+          // Don't return - show data but validation will block submission
         }
       }
 
@@ -219,32 +255,42 @@ export const useInvoiceExtraction = ({
       });
       
       setExtractSuccess(true);
+      console.log('✅ Extraction completed successfully');
+      
     } catch (error) {
       console.error('❌ Error en extracción:', error);
       
-      // Keep the file key marked to prevent retry loops on errors
-      // extractionAttemptedRef is already set at the beginning of handleExtraction
-      // This ensures we don't retry infinitely on network/API errors
-      
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setExtractError(`No se pudieron extraer los datos: ${errorMessage}. Por favor llena los campos manualmente.`);
+      
+      // Show user-friendly error for common issues
+      if (errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('not configured')) {
+        setExtractError('Error de configuración del servidor. Contacta al administrador.');
+      }
     } finally {
       setIsExtracting(false);
+      isProcessingRef.current = false;
     }
   }, [formData.xmlFile, formData.pdfFile, setFormData, checkUuidExists, validateProject, onValidationAlert, getFileKey]);
+
+  // Reset extraction state when files change
+  useEffect(() => {
+    const currentFileKey = getFileKey(formData.xmlFile, formData.pdfFile);
+    
+    // If files changed, reset success/error but keep attempt tracking
+    if (currentFileKey !== attemptedFileKey && attemptedFileKey !== null) {
+      setExtractSuccess(false);
+      setExtractError(null);
+    }
+  }, [formData.xmlFile, formData.pdfFile, attemptedFileKey, getFileKey]);
 
   const resetExtraction = useCallback(() => {
     setExtractSuccess(false);
     setExtractError(null);
-    extractionAttemptedRef.current = null;
+    setAttemptedFileKey(null);
+    extractionAttemptsRef.current.clear();
+    isProcessingRef.current = false;
   }, []);
-
-  // Check if extraction can be attempted (files present and not already attempted)
-  const canAttemptExtraction = useCallback((): boolean => {
-    if (!formData.xmlFile || !formData.pdfFile) return false;
-    const currentFileKey = getFileKey(formData.xmlFile, formData.pdfFile);
-    return currentFileKey !== extractionAttemptedRef.current;
-  }, [formData.xmlFile, formData.pdfFile, getFileKey]);
 
   return {
     isExtracting,
