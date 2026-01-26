@@ -130,16 +130,22 @@ export const validateOrigin = (req: VercelRequest): boolean => {
   // Allow same-origin requests (no origin header)
   if (!origin) return true;
   
-  // Allowed origins (add your production domain)
-  const allowedOrigins = [
+  // Default allowed origins
+  const defaultOrigins = [
     'http://localhost:3000',
+    'http://localhost:3001',
     'http://localhost:5173',
     'https://sube-tu-factura.vercel.app',
-    // Add more production domains as needed
+    'https://www.partrunner.app',
+    'https://partrunner.app',
   ];
   
+  // Add custom origins from environment variable
+  const customOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
+  const allowedOrigins = [...defaultOrigins, ...customOrigins];
+  
   // Check if origin matches allowed list
-  if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+  if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
     return true;
   }
   
