@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { InvoiceData } from '../types/invoice';
 import { extractInvoiceData } from '../services/openaiService';
 import { CONFIG } from '../constants/config';
@@ -29,6 +29,16 @@ export const useInvoiceExtraction = ({
   const [extractError, setExtractError] = useState<string | null>(null);
   const [extractSuccess, setExtractSuccess] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  
+  // Track if extraction was already attempted for current files
+  // This prevents infinite loops when validation fails
+  const extractionAttemptedRef = useRef<string | null>(null);
+
+  // Generate a unique key for current file pair
+  const getFileKey = useCallback((xmlFile: File | null, pdfFile: File | null): string | null => {
+    if (!xmlFile || !pdfFile) return null;
+    return `${xmlFile.name}-${xmlFile.lastModified}-${pdfFile.name}-${pdfFile.lastModified}`;
+  }, []);
 
   // Check if UUID already exists in database
   const checkUuidExists = useCallback(async (uuid: string): Promise<boolean> => {
@@ -59,6 +69,18 @@ export const useInvoiceExtraction = ({
 
   const handleExtraction = useCallback(async () => {
     if (!formData.xmlFile || !formData.pdfFile) return;
+    
+    // Check if we already attempted extraction for these exact files
+    const currentFileKey = getFileKey(formData.xmlFile, formData.pdfFile);
+    if (currentFileKey && extractionAttemptedRef.current === currentFileKey) {
+      console.log('⚠️ Extraction already attempted for these files, skipping');
+      return;
+    }
+    
+    // Mark extraction as attempted for these files BEFORE starting
+    if (currentFileKey) {
+      extractionAttemptedRef.current = currentFileKey;
+    }
     
     // Step 1: Validate filenames match
     const filenameValidation = validateMatchingFilenames(formData.xmlFile, formData.pdfFile);
@@ -124,11 +146,12 @@ export const useInvoiceExtraction = ({
             message: weekValidation.error || 'La fecha de factura corresponde a una semana que ya no está activa.',
           });
           setIsExtracting(false);
-          return;
+          // Don't return here - we still want to show the data but prevent submission
+          // The validation will block submission anyway
         }
       }
 
-      // All validations passed - update form data
+      // All validations passed (or non-blocking) - update form data
       setFormData(prev => {
         let emailUser = prev.emailUser;
         let emailDomain = prev.emailDomain;
@@ -197,17 +220,31 @@ export const useInvoiceExtraction = ({
       
       setExtractSuccess(true);
     } catch (error) {
-      console.error(error);
-      setExtractError("No se pudieron extraer los datos automáticamente. Por favor llena los campos.");
+      console.error('❌ Error en extracción:', error);
+      
+      // Keep the file key marked to prevent retry loops on errors
+      // extractionAttemptedRef is already set at the beginning of handleExtraction
+      // This ensures we don't retry infinitely on network/API errors
+      
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setExtractError(`No se pudieron extraer los datos: ${errorMessage}. Por favor llena los campos manualmente.`);
     } finally {
       setIsExtracting(false);
     }
-  }, [formData.xmlFile, formData.pdfFile, setFormData, checkUuidExists, validateProject, onValidationAlert]);
+  }, [formData.xmlFile, formData.pdfFile, setFormData, checkUuidExists, validateProject, onValidationAlert, getFileKey]);
 
   const resetExtraction = useCallback(() => {
     setExtractSuccess(false);
     setExtractError(null);
+    extractionAttemptedRef.current = null;
   }, []);
+
+  // Check if extraction can be attempted (files present and not already attempted)
+  const canAttemptExtraction = useCallback((): boolean => {
+    if (!formData.xmlFile || !formData.pdfFile) return false;
+    const currentFileKey = getFileKey(formData.xmlFile, formData.pdfFile);
+    return currentFileKey !== extractionAttemptedRef.current;
+  }, [formData.xmlFile, formData.pdfFile, getFileKey]);
 
   return {
     isExtracting,
@@ -216,5 +253,6 @@ export const useInvoiceExtraction = ({
     extractSuccess,
     handleExtraction,
     resetExtraction,
+    canAttemptExtraction,
   };
 };

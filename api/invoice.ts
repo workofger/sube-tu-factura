@@ -10,6 +10,7 @@ import {
 import { uploadInvoiceFiles } from './lib/googleDrive.js';
 import { validateInvoicePayload } from './lib/validators.js';
 import { InvoicePayload, ApiResponse, InvoiceSuccessData } from './lib/types.js';
+import { applySecurityMiddleware } from './lib/rateLimit.js';
 
 /**
  * POST /api/invoice
@@ -36,6 +37,11 @@ export default async function handler(
       error: 'METHOD_NOT_ALLOWED',
       message: 'Use POST request'
     } as ApiResponse);
+  }
+
+  // Apply security middleware (rate limiting + origin validation)
+  if (!applySecurityMiddleware(req, res)) {
+    return; // Response already sent by middleware
   }
 
   try {

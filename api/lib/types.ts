@@ -57,6 +57,18 @@ export interface ContactData {
   phone?: string;
 }
 
+// Payment Program Types
+export type PaymentProgram = 'standard' | 'pronto_pago';
+
+export interface PaymentProgramData {
+  program: PaymentProgram;
+  feeRate: number;
+  feeAmount: number;
+  netAmount: number;
+}
+
+export const PRONTO_PAGO_FEE_RATE = 0.08; // 8%
+
 export interface FileData {
   name: string;
   content: string; // Base64
@@ -78,6 +90,7 @@ export interface InvoicePayload {
   invoice: InvoiceIdentification;
   payment: PaymentData;
   financial: FinancialData;
+  paymentProgram: PaymentProgramData;
   items: InvoiceItem[];
   contact: ContactData;
   files: FilesData;
@@ -210,6 +223,13 @@ export interface DbInvoice {
   exchange_rate?: number;
   payment_week?: number;
   payment_year?: number;
+  // Pronto Pago fields
+  payment_program?: PaymentProgram;
+  pronto_pago_fee_rate?: number;
+  pronto_pago_fee_amount?: number;
+  net_payment_amount?: number;
+  scheduled_payment_date?: string;
+  // Contact and status
   contact_email?: string;
   contact_phone?: string;
   status: string;
@@ -226,4 +246,39 @@ export interface DbProject {
   icon?: string;
   sort_order?: number;
   is_active: boolean;
+}
+
+// OpenAI Extraction Result
+export interface ExtractionResult {
+  week?: number;
+  project?: string;
+  rfc?: string;
+  billerName?: string;
+  issuerRegime?: string;
+  issuerZipCode?: string;
+  receiverRfc?: string;
+  receiverName?: string;
+  receiverRegime?: string;
+  receiverZipCode?: string;
+  cfdiUse?: string;
+  email?: string;
+  invoiceDate?: string;
+  folio?: string;
+  series?: string;
+  uuid?: string;
+  certificationDate?: string;
+  satCertNumber?: string;
+  paymentMethod?: 'PUE' | 'PPD';
+  paymentForm?: string;
+  paymentConditions?: string;
+  subtotal?: number;
+  totalTax?: number;
+  retentionIva?: number;
+  retentionIvaRate?: number;
+  retentionIsr?: number;
+  retentionIsrRate?: number;
+  totalAmount?: number;
+  currency?: string;
+  exchangeRate?: string;
+  items?: InvoiceItem[];
 }

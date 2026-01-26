@@ -90,8 +90,8 @@ npm install
 Crear `.env.local`:
 
 ```env
-# OpenAI (Frontend - extraccion IA)
-VITE_OPENAI_API_KEY=sk-...
+# OpenAI (Backend - extraccion IA)
+OPENAI_API_KEY=sk-...
 
 # Supabase (Backend)
 SUPABASE_URL=https://xxx.supabase.co
@@ -272,15 +272,15 @@ curl -X POST https://tu-app.vercel.app/api/invoice \
 
 En Vercel > Settings > Environment Variables:
 
-| Variable | Scope |
-|----------|-------|
-| `VITE_OPENAI_API_KEY` | All |
-| `SUPABASE_URL` | All |
-| `SUPABASE_SERVICE_ROLE_KEY` | All |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | All |
-| `GOOGLE_PRIVATE_KEY` | All |
-| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | All |
-| `EXPECTED_RECEIVER_RFC` | All |
+| Variable | Scope | Descripción |
+|----------|-------|-------------|
+| `OPENAI_API_KEY` | All | API key de OpenAI (server-side) |
+| `SUPABASE_URL` | All | URL del proyecto Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | All | Service role key de Supabase |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | All | Email de la cuenta de servicio de Google |
+| `GOOGLE_PRIVATE_KEY` | All | Clave privada de la cuenta de servicio |
+| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | All | ID de la carpeta raíz en Drive |
+| `EXPECTED_RECEIVER_RFC` | All | RFC esperado del receptor |
 
 ### 3. Deploy
 

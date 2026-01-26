@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { InvoiceData, InvoiceItem, ProjectType } from '../types/invoice';
+import { useState, useCallback, useMemo } from 'react';
+import { InvoiceData, InvoiceItem, ProjectType, PaymentProgram, PRONTO_PAGO_FEE_RATE } from '../types/invoice';
 
 const initialFormData: InvoiceData = {
   week: '',
@@ -31,6 +31,12 @@ const initialFormData: InvoiceData = {
   totalAmount: '',
   currency: 'MXN',
   exchangeRate: '',
+  // Pronto Pago fields
+  paymentProgram: 'standard',
+  prontoPagoFeeRate: 0,
+  prontoPagoFeeAmount: 0,
+  netPaymentAmount: 0,
+  // Other fields
   items: [],
   emailUser: '',
   emailDomain: '@gmail.com',
@@ -82,8 +88,55 @@ export const useInvoiceForm = () => {
     setIsConfirmed(prev => !prev);
   }, []);
 
+  // Set payment program and recalculate amounts
+  const setPaymentProgram = useCallback((program: PaymentProgram) => {
+    setFormData(prev => {
+      const total = parseFloat(prev.totalAmount) || 0;
+      const feeRate = program === 'pronto_pago' ? PRONTO_PAGO_FEE_RATE : 0;
+      const feeAmount = total * feeRate;
+      const netAmount = total - feeAmount;
+      
+      return {
+        ...prev,
+        paymentProgram: program,
+        prontoPagoFeeRate: feeRate,
+        prontoPagoFeeAmount: Math.round(feeAmount * 100) / 100,
+        netPaymentAmount: Math.round(netAmount * 100) / 100,
+      };
+    });
+  }, []);
+
+  // Recalculate pronto pago amounts when total changes
+  const recalculateProntoPago = useCallback(() => {
+    setFormData(prev => {
+      const total = parseFloat(prev.totalAmount) || 0;
+      const feeRate = prev.paymentProgram === 'pronto_pago' ? PRONTO_PAGO_FEE_RATE : 0;
+      const feeAmount = total * feeRate;
+      const netAmount = total - feeAmount;
+      
+      return {
+        ...prev,
+        prontoPagoFeeRate: feeRate,
+        prontoPagoFeeAmount: Math.round(feeAmount * 100) / 100,
+        netPaymentAmount: Math.round(netAmount * 100) / 100,
+      };
+    });
+  }, []);
+
   // Calculate items total
   const itemsTotal = formData.items.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+  // Calculate pronto pago preview amounts (for UI display)
+  const prontoPagoPreview = useMemo(() => {
+    const total = parseFloat(formData.totalAmount) || 0;
+    const feeAmount = total * PRONTO_PAGO_FEE_RATE;
+    const netAmount = total - feeAmount;
+    return {
+      feeAmount: Math.round(feeAmount * 100) / 100,
+      netAmount: Math.round(netAmount * 100) / 100,
+      standardAmount: total,
+    };
+  }, [formData.totalAmount]);
 
   // Check if retentions should be shown
   const showRetentionIva = Boolean(
@@ -110,5 +163,9 @@ export const useInvoiceForm = () => {
     itemsTotal,
     showRetentionIva,
     showRetentionIsr,
+    // Pronto Pago
+    setPaymentProgram,
+    recalculateProntoPago,
+    prontoPagoPreview,
   };
 };

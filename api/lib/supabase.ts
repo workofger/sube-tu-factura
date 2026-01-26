@@ -226,6 +226,12 @@ export const insertInvoice = async (
     exchange_rate: payload.financial.exchangeRate || 1,
     payment_week: payload.week || null,
     payment_year: invoiceYear,
+    // Pronto Pago fields
+    payment_program: payload.paymentProgram?.program || 'standard',
+    pronto_pago_fee_rate: payload.paymentProgram?.feeRate || 0,
+    pronto_pago_fee_amount: payload.paymentProgram?.feeAmount || 0,
+    net_payment_amount: payload.paymentProgram?.netAmount || payload.financial.totalAmount,
+    // Contact and status
     contact_email: payload.contact.email || null,
     contact_phone: payload.contact.phone || null,
     status: 'pending_review'

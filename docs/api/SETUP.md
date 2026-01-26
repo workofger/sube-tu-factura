@@ -37,9 +37,9 @@ Esta guia detalla como configurar todas las credenciales necesarias para Factura
 sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-Esta sera tu `VITE_OPENAI_API_KEY`.
+Esta sera tu `OPENAI_API_KEY`.
 
-> **Nota:** El prefijo `VITE_` es necesario para que Vite la exponga al frontend.
+> **Nota:** Esta key se usa SOLO en el backend (Vercel Functions). NO la expongas en el frontend.
 
 ---
 
@@ -179,7 +179,7 @@ https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOpQrStUvWxYz123456
 
 | Variable | Descripcion | Entornos |
 |----------|-------------|----------|
-| `VITE_OPENAI_API_KEY` | API key de OpenAI (sk-...) | All |
+| `OPENAI_API_KEY` | API key de OpenAI (sk-...) - Server-side | All |
 | `SUPABASE_URL` | URL de Supabase | All |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key | All |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Email de Service Account | All |
@@ -235,6 +235,7 @@ Respuesta esperada:
 
 ### 6.2 Si OpenAI falla
 
+- Verificar que `OPENAI_API_KEY` esta configurada en Vercel (NO en el frontend)
 - Verificar que la key comienza con `sk-`
 - Verificar que tienes creditos en tu cuenta
 - Verificar que el modelo `gpt-4o` esta disponible para tu cuenta
@@ -264,8 +265,8 @@ En Vercel:
 ## Resumen de Variables
 
 ```env
-# Frontend - OpenAI (VITE_ prefix para exposicion al browser)
-VITE_OPENAI_API_KEY=sk-proj-xxxxxxxxxxxx
+# Backend - OpenAI (Server-side only - NEVER expose in frontend)
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxx
 
 # Backend - Supabase
 SUPABASE_URL=https://xxx.supabase.co

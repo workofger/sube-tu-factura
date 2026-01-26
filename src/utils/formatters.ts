@@ -35,3 +35,11 @@ export const formatNumber = (num: number, decimals: number = 2): string => {
     maximumFractionDigits: decimals,
   });
 };
+
+/**
+ * Format a number as money (MXN)
+ * Shorthand for formatCurrency with default currency
+ */
+export const formatMoney = (amount: number): string => {
+  return formatCurrency(amount, 'MXN');
+};

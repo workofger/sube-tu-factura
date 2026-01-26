@@ -9,6 +9,66 @@ export interface ValidationResult {
 const EXPECTED_RECEIVER_RFC = process.env.EXPECTED_RECEIVER_RFC || 'BLI180227F23';
 
 /**
+ * Get the ISO week number for a date
+ */
+const getWeekNumber = (date: Date): number => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+};
+
+/**
+ * Check if an invoice date corresponds to an active upload week
+ * Active weeks: current week and previous 2 weeks
+ */
+const isValidInvoiceWeek = (invoiceDate: string): { valid: boolean; error?: string } => {
+  const invoiceDateObj = new Date(invoiceDate);
+  const today = new Date();
+  
+  const invoiceWeek = getWeekNumber(invoiceDateObj);
+  const invoiceYear = invoiceDateObj.getFullYear();
+  const currentWeek = getWeekNumber(today);
+  const currentYear = today.getFullYear();
+  
+  // Calculate week difference considering year boundaries
+  let weekDiff = 0;
+  if (currentYear === invoiceYear) {
+    weekDiff = currentWeek - invoiceWeek;
+  } else if (currentYear > invoiceYear) {
+    // Invoice from previous year
+    const weeksInPrevYear = 52; // Simplified
+    weekDiff = currentWeek + (weeksInPrevYear - invoiceWeek);
+  } else {
+    // Invoice from future year (invalid)
+    return { 
+      valid: false, 
+      error: 'La fecha de factura no puede ser de un año futuro' 
+    };
+  }
+  
+  // Allow current week and previous 2 weeks (3 weeks total)
+  const MAX_WEEKS_ALLOWED = 3;
+  
+  if (weekDiff < 0) {
+    return { 
+      valid: false, 
+      error: 'La fecha de factura no puede ser de una semana futura' 
+    };
+  }
+  
+  if (weekDiff >= MAX_WEEKS_ALLOWED) {
+    return { 
+      valid: false, 
+      error: `La fecha de factura corresponde a la semana ${invoiceWeek}. Solo se aceptan facturas de las últimas ${MAX_WEEKS_ALLOWED} semanas (semanas ${currentWeek - MAX_WEEKS_ALLOWED + 1} a ${currentWeek}).` 
+    };
+  }
+  
+  return { valid: true };
+};
+
+/**
  * Validate RFC format (basic validation)
  */
 const isValidRfc = (rfc: string): boolean => {
@@ -110,6 +170,12 @@ export const validateInvoicePayload = (payload: InvoicePayload): ValidationResul
       errors.push('Fecha de factura es requerida');
     } else if (!isValidDate(payload.invoice.date)) {
       errors.push('Fecha de factura tiene formato inválido (usar YYYY-MM-DD)');
+    } else {
+      // Validate invoice week is still active
+      const weekValidation = isValidInvoiceWeek(payload.invoice.date);
+      if (!weekValidation.valid && weekValidation.error) {
+        errors.push(weekValidation.error);
+      }
     }
   }
 

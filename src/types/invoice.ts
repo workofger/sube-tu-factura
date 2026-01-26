@@ -8,6 +8,12 @@ export interface InvoiceItem {
   taxObject?: string; // ObjetoImp
 }
 
+// Payment program type
+export type PaymentProgram = 'standard' | 'pronto_pago';
+
+// Pronto Pago fee configuration
+export const PRONTO_PAGO_FEE_RATE = 0.08; // 8%
+
 export interface InvoiceData {
   // Selection fields
   week: string;
@@ -49,6 +55,12 @@ export interface InvoiceData {
   totalAmount: string;
   currency: string;
   exchangeRate?: string; // TipoCambio
+  
+  // Payment program (Pronto Pago)
+  paymentProgram: PaymentProgram;
+  prontoPagoFeeRate: number;
+  prontoPagoFeeAmount: number;
+  netPaymentAmount: number;
   
   // Items
   items: InvoiceItem[];
@@ -171,6 +183,14 @@ export interface WebhookPayload {
     totalAmount: number;
     currency: string;
     exchangeRate?: string;
+  };
+  
+  // Payment program (Pronto Pago)
+  paymentProgram: {
+    program: PaymentProgram;
+    feeRate: number;
+    feeAmount: number;
+    netAmount: number;
   };
   
   // Line items

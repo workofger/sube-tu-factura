@@ -91,6 +91,14 @@ export const buildWebhookPayload = async (formData: InvoiceData): Promise<Webhoo
       exchangeRate: formData.exchangeRate,
     },
 
+    // Payment program (Pronto Pago)
+    paymentProgram: {
+      program: formData.paymentProgram,
+      feeRate: formData.prontoPagoFeeRate,
+      feeAmount: formData.prontoPagoFeeAmount,
+      netAmount: formData.netPaymentAmount,
+    },
+
     // Line items
     items: formData.items,
 
