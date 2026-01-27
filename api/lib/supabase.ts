@@ -358,6 +358,37 @@ export const saveFileRecord = async (
 };
 
 /**
+ * Update file record with Google Drive info (after successful Drive upload)
+ */
+export const updateFileRecord = async (
+  invoiceId: string,
+  fileType: 'xml' | 'pdf',
+  driveUrl: string,
+  driveId: string
+): Promise<void> => {
+  const client = getSupabaseClient();
+  
+  console.log(`📝 Updating file record: ${fileType} for invoice ${invoiceId}`);
+  console.log(`   - driveId: ${driveId}`);
+  console.log(`   - driveUrl: ${driveUrl}`);
+  
+  const { error } = await client
+    .from('invoice_files')
+    .update({
+      file_path: driveUrl, // Update to Drive URL (preferred)
+    })
+    .eq('invoice_id', invoiceId)
+    .eq('file_type', fileType);
+  
+  if (error) {
+    console.error(`❌ Failed to update file record: ${error.message}`);
+    // Don't throw - file is already saved, just couldn't update Drive URL
+  } else {
+    console.log(`✅ File record updated with Drive URL`);
+  }
+};
+
+/**
  * Get all flotilleros
  */
 export const getFlotilleros = async (): Promise<DbFlotillero[]> => {

@@ -5,8 +5,10 @@ import {
   getProject, 
   insertInvoice, 
   insertInvoiceItems,
-  saveFileRecord 
+  saveFileRecord,
+  updateFileRecord
 } from './lib/supabase.js';
+import { uploadInvoiceToStorage } from './lib/storage.js';
 import { uploadInvoiceFiles } from './lib/googleDrive.js';
 import { validateInvoicePayload } from './lib/validators.js';
 import { InvoicePayload, ApiResponse, InvoiceSuccessData } from './lib/types.js';
@@ -15,6 +17,12 @@ import { applySecurityMiddleware } from './lib/rateLimit.js';
 /**
  * POST /api/invoice
  * Process and save a complete invoice with files
+ * 
+ * File storage strategy:
+ * 1. First upload to Supabase Storage (primary/guaranteed)
+ * 2. Save file reference to database
+ * 3. Then attempt Google Drive upload (backup/optional)
+ * 4. If Drive succeeds, update reference with Drive URL
  */
 export default async function handler(
   req: VercelRequest,
@@ -94,26 +102,78 @@ export default async function handler(
     await insertInvoiceItems(invoice.id, payload.items);
     console.log('✅ Items inserted');
 
-    // Step 7: Upload files to Google Drive
-    let driveResult: {
-      folderPath: string;
-      xmlFile?: { fileId: string; webViewLink: string };
-      pdfFile?: { fileId: string; webViewLink: string };
-    } | null = null;
-
+    // Step 7: Upload files
     const hasXml = payload.files?.xml?.content;
     const hasPdf = payload.files?.pdf?.content;
+    const invoiceYear = new Date(payload.invoice.date).getFullYear();
+    
     console.log('📦 Files received:', { 
       hasXml: !!hasXml, 
       xmlSize: hasXml ? hasXml.length : 0,
       hasPdf: !!hasPdf, 
       pdfSize: hasPdf ? hasPdf.length : 0 
     });
-    
+
+    let storageResult: {
+      xmlFile?: { path: string; publicUrl: string };
+      pdfFile?: { path: string; publicUrl: string };
+    } = {};
+
+    let driveResult: {
+      folderPath: string;
+      xmlFile?: { fileId: string; webViewLink: string };
+      pdfFile?: { fileId: string; webViewLink: string };
+    } | null = null;
+
     if (hasXml || hasPdf) {
-      console.log('📤 Uploading files to Google Drive...');
-      const invoiceYear = new Date(payload.invoice.date).getFullYear();
-      
+      // ===== STEP 7A: Upload to Supabase Storage (PRIMARY) =====
+      console.log('📤 [1/2] Uploading files to Supabase Storage...');
+      try {
+        storageResult = await uploadInvoiceToStorage(
+          payload.week,
+          invoiceYear,
+          payload.project,
+          payload.issuer.rfc,
+          payload.invoice.uuid,
+          hasXml,
+          hasPdf
+        );
+        
+        console.log('✅ Files uploaded to Supabase Storage');
+        
+        // Save file records to database with Supabase Storage URLs
+        if (storageResult.xmlFile) {
+          console.log('💾 Saving XML file record (Supabase)...');
+          await saveFileRecord(
+            invoice.id,
+            'xml',
+            `${payload.invoice.uuid}.xml`,
+            storageResult.xmlFile.publicUrl,
+            storageResult.xmlFile.path // Use path as reference
+          );
+        }
+
+        if (storageResult.pdfFile) {
+          console.log('💾 Saving PDF file record (Supabase)...');
+          await saveFileRecord(
+            invoice.id,
+            'pdf',
+            `${payload.invoice.uuid}.pdf`,
+            storageResult.pdfFile.publicUrl,
+            storageResult.pdfFile.path // Use path as reference
+          );
+        }
+        console.log('✅ File records saved to database');
+        
+      } catch (storageError) {
+        console.error('❌ Supabase Storage error:', storageError);
+        const err = storageError as Error;
+        console.error('   Message:', err.message);
+        // Continue to try Google Drive as fallback
+      }
+
+      // ===== STEP 7B: Upload to Google Drive (BACKUP) =====
+      console.log('📤 [2/2] Attempting Google Drive upload (backup)...');
       try {
         driveResult = await uploadInvoiceFiles(
           payload.week,
@@ -125,41 +185,34 @@ export default async function handler(
           hasXml,
           hasPdf
         );
-        console.log('✅ Files uploaded to:', driveResult.folderPath);
-        console.log('   XML result:', driveResult.xmlFile ? `fileId=${driveResult.xmlFile.fileId}` : 'not uploaded');
-        console.log('   PDF result:', driveResult.pdfFile ? `fileId=${driveResult.pdfFile.fileId}` : 'not uploaded');
+        
+        console.log('✅ Files uploaded to Google Drive:', driveResult.folderPath);
 
-        // Step 8: Save file records to database
+        // Update file records with Google Drive URLs if Drive upload succeeded
         if (driveResult.xmlFile) {
-          console.log('💾 Saving XML file record...');
-          await saveFileRecord(
+          console.log('📝 Updating XML record with Drive URL...');
+          await updateFileRecord(
             invoice.id,
             'xml',
-            `${payload.invoice.uuid}.xml`,
             driveResult.xmlFile.webViewLink,
             driveResult.xmlFile.fileId
           );
         }
 
         if (driveResult.pdfFile) {
-          console.log('💾 Saving PDF file record...');
-          await saveFileRecord(
+          console.log('📝 Updating PDF record with Drive URL...');
+          await updateFileRecord(
             invoice.id,
             'pdf',
-            `${payload.invoice.uuid}.pdf`,
             driveResult.pdfFile.webViewLink,
             driveResult.pdfFile.fileId
           );
         }
-        console.log('✅ All file records saved to database');
+        console.log('✅ File records updated with Drive URLs');
 
       } catch (driveError) {
-        // Log error but don't fail the entire request
-        console.error('⚠️ Google Drive/File save error:', driveError);
-        const err = driveError as Error;
-        console.error('   Message:', err.message);
-        console.error('   Stack:', err.stack);
-        // Invoice is already saved, just note the drive failure
+        // Google Drive failed but files are safe in Supabase Storage
+        console.warn('⚠️ Google Drive upload failed (files safe in Supabase):', (driveError as Error).message);
       }
     } else {
       console.log('⚠️ No file content received in payload');
@@ -169,14 +222,16 @@ export default async function handler(
     const responseData: InvoiceSuccessData = {
       invoiceId: invoice.id,
       uuid: payload.invoice.uuid,
-      driveFolderPath: driveResult?.folderPath || 'N/A',
+      driveFolderPath: driveResult?.folderPath || 'Supabase Storage',
       files: {
-        xml: driveResult?.xmlFile?.webViewLink,
-        pdf: driveResult?.pdfFile?.webViewLink
+        xml: driveResult?.xmlFile?.webViewLink || storageResult.xmlFile?.publicUrl,
+        pdf: driveResult?.pdfFile?.webViewLink || storageResult.pdfFile?.publicUrl
       }
     };
 
     console.log('🎉 Invoice processed successfully!');
+    console.log('   Storage:', storageResult.xmlFile ? '✅ Supabase' : '❌');
+    console.log('   Drive:', driveResult ? '✅ Google Drive' : '❌');
 
     return res.status(201).json({
       success: true,
