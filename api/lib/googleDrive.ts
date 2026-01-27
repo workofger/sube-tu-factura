@@ -6,23 +6,51 @@ let driveClient: drive_v3.Drive | null = null;
 
 /**
  * Initialize Google Drive client with Service Account credentials
+ * 
+ * Uses Domain-Wide Delegation (impersonation) when GOOGLE_IMPERSONATE_EMAIL is set.
+ * This allows the Service Account to act on behalf of a real user,
+ * using their storage quota instead of the SA's (which is 0).
+ * 
+ * Setup required in Google Admin Console:
+ * 1. Go to Security > API Controls > Domain-wide Delegation
+ * 2. Add the Service Account Client ID
+ * 3. Add scope: https://www.googleapis.com/auth/drive
  */
 export const getDriveClient = (): drive_v3.Drive => {
   if (!driveClient) {
     const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const impersonateEmail = process.env.GOOGLE_IMPERSONATE_EMAIL;
     
     if (!serviceAccountEmail || !privateKey) {
       throw new Error('Missing Google Drive Service Account credentials');
     }
     
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: serviceAccountEmail,
-        private_key: privateKey,
-      },
-      scopes: ['https://www.googleapis.com/auth/drive'],
-    });
+    let auth;
+    
+    if (impersonateEmail) {
+      // Use Domain-Wide Delegation (impersonation)
+      // Files will be created as the impersonated user, using their quota
+      console.log(`🔐 Using Domain-Wide Delegation, impersonating: ${impersonateEmail}`);
+      
+      auth = new google.auth.JWT({
+        email: serviceAccountEmail,
+        key: privateKey,
+        scopes: ['https://www.googleapis.com/auth/drive'],
+        subject: impersonateEmail, // Impersonate this user
+      });
+    } else {
+      // Standard Service Account auth (may fail with "no storage quota")
+      console.log('🔐 Using standard Service Account auth (no impersonation)');
+      
+      auth = new google.auth.GoogleAuth({
+        credentials: {
+          client_email: serviceAccountEmail,
+          private_key: privateKey,
+        },
+        scopes: ['https://www.googleapis.com/auth/drive'],
+      });
+    }
     
     driveClient = google.drive({ version: 'v3', auth });
   }
