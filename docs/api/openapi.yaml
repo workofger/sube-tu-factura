@@ -2,20 +2,30 @@ openapi: 3.0.3
 info:
   title: FacturaFlow API
   description: |
-    API para gestion de facturas CFDI v2.0.
+    API para gestión de facturas CFDI v2.2.
     
     Esta API permite:
     - Registrar facturas con archivos XML/PDF
     - Validar si un UUID ya existe
     - Obtener lista de proyectos
     - Verificar el estado de los servicios
+    - Autenticación de usuarios (flotilleros/drivers)
+    - Gestión de API Keys para acceso programático
+    - Panel administrativo con reportes y exportaciones
+    
+    **Novedades v2.2:**
+    - Sistema de API Keys para acceso programático
+    - Autenticación de usuarios (flotilleros/drivers) con password y magic link
+    - Exportación de pagos en formato XLSX (Shinkansen/BBVA)
+    - Configuración del sistema administrable
+    - Información bancaria de flotilleros para dispersión de pagos
     
     **Novedades v2.0:**
     - Soporte para modelo Flotilleros/Drivers
-    - Un flotillero puede tener multiples drivers
+    - Un flotillero puede tener múltiples drivers
     - Un driver independiente es un flotillero de tipo 'independiente'
-    - Los archivos se almacenan automaticamente en Google Drive con estructura organizada por semana, proyecto y facturador
-  version: 2.0.0
+    - Los archivos se almacenan automáticamente en Google Drive
+  version: 2.2.0
   contact:
     name: PartRunner Support
     email: soporte@partrunner.com
@@ -23,7 +33,7 @@ info:
 
 servers:
   - url: https://sube-tu-factura.vercel.app/api
-    description: Produccion
+    description: Producción
   - url: http://localhost:3000/api
     description: Desarrollo local
 
@@ -31,11 +41,22 @@ tags:
   - name: Invoices
     description: Operaciones con facturas
   - name: Projects
-    description: Catalogo de proyectos
+    description: Catálogo de proyectos
   - name: Health
     description: Estado del sistema
+  - name: User Auth
+    description: Autenticación de usuarios (flotilleros/drivers)
+  - name: Admin
+    description: Panel administrativo
+  - name: API Keys
+    description: Gestión de API Keys
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
 
 paths:
+  # ========== Invoices ==========
   /invoice:
     post:
       tags:
@@ -59,42 +80,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/InvoicePayload'
-            example:
-              week: 4
-              project: "MERCADO LIBRE"
-              issuer:
-                rfc: "XAXX010101000"
-                name: "Juan Perez Garcia"
-                regime: "626"
-                zipCode: "06600"
-              receiver:
-                rfc: "BLI180227F23"
-                name: "PartRunner Logistics"
-                cfdiUse: "G03"
-              invoice:
-                uuid: "3FA85F64-5717-4562-B3FC-2C963F66AFA6"
-                folio: "A-001"
-                date: "2026-01-20"
-              payment:
-                method: "PUE"
-                form: "03"
-              financial:
-                subtotal: 10000
-                totalTax: 1600
-                totalAmount: 11600
-                currency: "MXN"
-              items:
-                - description: "Servicio de transporte"
-                  quantity: 1
-                  unitPrice: 10000
-                  amount: 10000
-              contact:
-                email: "juan@gmail.com"
-              files:
-                xml:
-                  name: "factura.xml"
-                  content: "BASE64_CONTENT"
-                  mimeType: "application/xml"
       responses:
         '201':
           description: Factura registrada exitosamente
@@ -103,7 +88,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InvoiceSuccessResponse'
         '400':
-          description: Error de validacion
+          description: Error de validación
           content:
             application/json:
               schema:
@@ -143,18 +128,56 @@ paths:
                   example: "3FA85F64-5717-4562-B3FC-2C963F66AFA6"
       responses:
         '200':
-          description: Resultado de validacion
+          description: Resultado de validación
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidateResponse'
         '400':
-          description: UUID invalido
+          description: UUID inválido
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
 
+  /extract:
+    post:
+      tags:
+        - Invoices
+      summary: Extraer datos de factura
+      description: |
+        Usa IA (OpenAI GPT-4o) para extraer datos de archivos XML/PDF de facturas CFDI.
+        Retorna un objeto estructurado con todos los datos extraídos.
+      operationId: extractInvoiceData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                xmlContent:
+                  type: string
+                  description: Contenido del archivo XML
+                pdfBase64:
+                  type: string
+                  description: PDF en Base64
+                pdfFilename:
+                  type: string
+                  description: Nombre del archivo PDF
+      responses:
+        '200':
+          description: Datos extraídos exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResponse'
+        '400':
+          description: Error de validación
+        '500':
+          description: Error en la extracción
+
+  # ========== Projects ==========
   /projects:
     get:
       tags:
@@ -176,12 +199,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalErrorResponse'
 
+  # ========== Health ==========
   /health:
     get:
       tags:
         - Health
       summary: Estado del sistema
-      description: Verifica la conexion con Supabase y Google Drive
+      description: Verifica la conexión con Supabase y Google Drive
       operationId: getHealth
       responses:
         '200':
@@ -192,18 +216,512 @@ paths:
                 $ref: '#/components/schemas/HealthResponse'
         '207':
           description: Sistema degradado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
         '503':
           description: Sistema no disponible
+
+  # ========== User Auth ==========
+  /user/login:
+    post:
+      tags:
+        - User Auth
+      summary: Iniciar sesión
+      description: Autenticar usuario con email y contraseña
+      operationId: userLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login exitoso
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
+                $ref: '#/components/schemas/UserAuthResponse'
+        '401':
+          description: Credenciales inválidas
+        '403':
+          description: Cuenta no verificada o inactiva
+
+  /user/register:
+    post:
+      tags:
+        - User Auth
+      summary: Registrar usuario
+      description: Registrar nuevo flotillero/driver independiente
+      operationId: userRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - rfc
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                rfc:
+                  type: string
+                  pattern: '^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$'
+                full_name:
+                  type: string
+      responses:
+        '201':
+          description: Registro exitoso
+        '400':
+          description: Datos inválidos
+        '409':
+          description: Email o RFC ya registrado
+
+  /user/magic-link:
+    post:
+      tags:
+        - User Auth
+      summary: Solicitar magic link
+      description: Envía un enlace de acceso sin contraseña al email
+      operationId: requestMagicLink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Si el email existe, se enviará un enlace
+
+  /user/verify-magic-link:
+    get:
+      tags:
+        - User Auth
+      summary: Verificar magic link
+      description: Verifica el token del magic link y autentica al usuario
+      operationId: verifyMagicLink
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAuthResponse'
+        '401':
+          description: Token inválido o expirado
+
+  /user/profile:
+    get:
+      tags:
+        - User Auth
+      summary: Obtener perfil
+      description: Obtiene el perfil del usuario autenticado
+      operationId: getUserProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: No autorizado
+    put:
+      tags:
+        - User Auth
+      summary: Actualizar perfil
+      description: Actualiza datos del perfil (teléfono, dirección, datos bancarios)
+      operationId: updateUserProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                address:
+                  type: string
+                bank_name:
+                  type: string
+                bank_clabe:
+                  type: string
+                  maxLength: 18
+                  minLength: 18
+      responses:
+        '200':
+          description: Perfil actualizado
+        '400':
+          description: Datos inválidos
+
+  # ========== Admin ==========
+  /admin/login:
+    post:
+      tags:
+        - Admin
+      summary: Login administrativo
+      description: Autenticar usuario administrador
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAuthResponse'
+        '401':
+          description: Credenciales inválidas
+
+  /admin/stats:
+    get:
+      tags:
+        - Admin
+      summary: Estadísticas del dashboard
+      description: Obtiene estadísticas generales de facturas
+      operationId: getAdminStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Estadísticas del sistema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+
+  /admin/invoices:
+    get:
+      tags:
+        - Admin
+      summary: Listar facturas
+      description: Lista facturas con filtros y paginación
+      operationId: getAdminInvoices
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: week
+          in: query
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: project
+          in: query
+          schema:
+            type: string
+        - name: paymentProgram
+          in: query
+          schema:
+            type: string
+            enum: [standard, pronto_pago]
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de facturas
+
+  /admin/export:
+    get:
+      tags:
+        - Admin
+      summary: Exportar facturas CSV
+      description: Exporta facturas en formato CSV
+      operationId: exportInvoicesCSV
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: weekFrom
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: weekTo
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: project
+          in: query
+          schema:
+            type: string
+        - name: paymentProgram
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Archivo CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /admin/export-payments:
+    get:
+      tags:
+        - Admin
+      summary: Exportar pagos XLSX
+      description: |
+        Exporta archivo de pagos en formato XLSX compatible con Shinkansen/BBVA.
+        Agrupa facturas por flotillero y suma los montos netos a pagar.
+      operationId: exportPaymentsXLSX
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: week
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: project
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Archivo XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /admin/config:
+    get:
+      tags:
+        - Admin
+      summary: Obtener configuración
+      description: Obtiene configuraciones del sistema
+      operationId: getSystemConfig
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: key
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Configuración del sistema
+    put:
+      tags:
+        - Admin
+      summary: Actualizar configuración
+      description: Actualiza una configuración (solo super_admin)
+      operationId: updateSystemConfig
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value:
+                  type: object
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Configuración actualizada
+        '403':
+          description: No autorizado
+
+  # ========== API Keys ==========
+  /admin/api-keys:
+    get:
+      tags:
+        - API Keys
+      summary: Listar API Keys
+      description: Lista todas las API Keys (solo prefijo visible)
+      operationId: listApiKeys
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de API Keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiKeyInfo'
+    post:
+      tags:
+        - API Keys
+      summary: Crear API Key
+      description: |
+        Crea una nueva API Key. 
+        **IMPORTANTE:** La key completa solo se muestra una vez en la respuesta.
+      operationId: createApiKey
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                    enum: [public, admin, export, user]
+                  default: [public, admin]
+                rate_limit_per_minute:
+                  type: integer
+                  default: 60
+                rate_limit_per_day:
+                  type: integer
+                  default: 10000
+                expires_in_days:
+                  type: integer
+      responses:
+        '201':
+          description: API Key creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateApiKeyResponse'
+    delete:
+      tags:
+        - API Keys
+      summary: Revocar API Key
+      description: Revoca una API Key existente
+      operationId: revokeApiKey
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: API Key revocada
+        '404':
+          description: API Key no encontrada
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenido del login
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API Key para acceso programático (formato pk_xxxxx)
+
   schemas:
     InvoicePayload:
       type: object
@@ -222,11 +740,20 @@ components:
           type: integer
           minimum: 1
           maximum: 53
-          description: Numero de semana
         project:
           type: string
-          description: Nombre o codigo del proyecto
-          example: "MERCADO LIBRE"
+        paymentProgram:
+          type: object
+          properties:
+            program:
+              type: string
+              enum: [standard, pronto_pago]
+            feeRate:
+              type: number
+            feeAmount:
+              type: number
+            netAmount:
+              type: number
         issuer:
           $ref: '#/components/schemas/IssuerData'
         receiver:
@@ -248,40 +775,27 @@ components:
 
     IssuerData:
       type: object
-      description: |
-        Datos del emisor (quien factura).
-        Se usa para crear/actualizar el flotillero y driver asociado.
       required:
         - rfc
         - name
       properties:
         rfc:
           type: string
-          pattern: '^[A-ZN&]{3,4}\d{6}[A-Z0-9]{3}$'
-          example: "XAXX010101000"
-          description: RFC del emisor (12-13 caracteres)
+          pattern: '^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$'
         name:
           type: string
-          example: "Juan Perez Garcia"
-          description: Nombre o razon social
         regime:
           type: string
-          example: "626"
-          description: Codigo de regimen fiscal SAT
         zipCode:
           type: string
-          example: "06600"
-          description: Codigo postal fiscal
 
     ReceiverData:
       type: object
-      description: Datos del receptor (empresa que recibe la factura)
       required:
         - rfc
       properties:
         rfc:
           type: string
-          example: "BLI180227F23"
         name:
           type: string
         regime:
@@ -290,7 +804,6 @@ components:
           type: string
         cfdiUse:
           type: string
-          example: "G03"
 
     InvoiceIdentification:
       type: object
@@ -301,7 +814,6 @@ components:
         uuid:
           type: string
           format: uuid
-          description: Folio fiscal unico (36 caracteres)
         folio:
           type: string
         series:
@@ -309,11 +821,6 @@ components:
         date:
           type: string
           format: date
-        certificationDate:
-          type: string
-          format: date-time
-        satCertNumber:
-          type: string
 
     PaymentData:
       type: object
@@ -323,12 +830,7 @@ components:
         method:
           type: string
           enum: [PUE, PPD]
-          description: PUE = Pago en Una Exhibicion, PPD = Pago en Parcialidades
         form:
-          type: string
-          example: "03"
-          description: Codigo de forma de pago SAT
-        conditions:
           type: string
 
     FinancialData:
@@ -341,23 +843,15 @@ components:
           type: number
         totalTax:
           type: number
-          description: IVA trasladado
         retentionIva:
           type: number
-        retentionIvaRate:
-          type: number
         retentionIsr:
-          type: number
-        retentionIsrRate:
           type: number
         totalAmount:
           type: number
         currency:
           type: string
           default: MXN
-        exchangeRate:
-          type: number
-          default: 1
 
     InvoiceItem:
       type: object
@@ -377,12 +871,6 @@ components:
           type: number
         amount:
           type: number
-        productKey:
-          type: string
-          description: ClaveProdServ SAT
-        taxObject:
-          type: string
-          description: ObjetoImp SAT
 
     ContactData:
       type: object
@@ -403,31 +891,22 @@ components:
 
     FileData:
       type: object
-      required:
-        - name
-        - content
-        - mimeType
       properties:
         name:
           type: string
         content:
           type: string
           format: byte
-          description: Contenido en Base64
         mimeType:
           type: string
 
-    # Response Schemas
-    
     InvoiceSuccessResponse:
       type: object
       properties:
         success:
           type: boolean
-          example: true
         message:
           type: string
-          example: "Factura registrada exitosamente!"
         data:
           type: object
           properties:
@@ -436,26 +915,16 @@ components:
               format: uuid
             uuid:
               type: string
-              format: uuid
             billerId:
               type: string
               format: uuid
-              description: ID del flotillero/facturador
             driverId:
               type: string
               format: uuid
-              description: ID del driver asociado
             driveFolderPath:
               type: string
             files:
               type: object
-              properties:
-                xml:
-                  type: string
-                  format: uri
-                pdf:
-                  type: string
-                  format: uri
 
     ValidationErrorResponse:
       type: object
@@ -465,10 +934,8 @@ components:
           example: false
         error:
           type: string
-          example: "VALIDATION_ERROR"
         message:
           type: string
-          example: "Datos invalidos"
         details:
           type: array
           items:
@@ -485,13 +952,8 @@ components:
           example: "DUPLICATE_INVOICE"
         message:
           type: string
-          example: "Esta factura ya fue registrada anteriormente"
         data:
           type: object
-          properties:
-            existingInvoiceId:
-              type: string
-              format: uuid
 
     InternalErrorResponse:
       type: object
@@ -501,13 +963,8 @@ components:
           example: false
         error:
           type: string
-          example: "INTERNAL_ERROR"
         message:
           type: string
-        details:
-          type: array
-          items:
-            type: string
 
     ValidateResponse:
       type: object
@@ -525,7 +982,6 @@ components:
       properties:
         success:
           type: boolean
-          example: true
         data:
           type: array
           items:
@@ -539,19 +995,10 @@ components:
           format: uuid
         code:
           type: string
-          example: "MERCADO_LIBRE"
         name:
           type: string
-          example: "Mercado Libre"
         color:
           type: string
-          example: "#FFE600"
-        icon:
-          type: string
-          nullable: true
-        sort_order:
-          type: integer
-          example: 1
         is_active:
           type: boolean
 
@@ -566,10 +1013,181 @@ components:
           format: date-time
         services:
           type: object
+
+    ExtractionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          description: Datos extraídos de la factura
+
+    UserAuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
           properties:
-            supabase:
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                rfc:
+                  type: string
+                fiscal_name:
+                  type: string
+                email:
+                  type: string
+                type:
+                  type: string
+            token:
               type: string
-              enum: [connected, disconnected, error]
-            googleDrive:
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        rfc:
+          type: string
+        fiscal_name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        type:
+          type: string
+          enum: [flotillero, independiente]
+        bank_name:
+          type: string
+        bank_clabe:
+          type: string
+        stats:
+          type: object
+          properties:
+            drivers_count:
+              type: integer
+            invoices_total:
+              type: integer
+            invoices_paid:
+              type: integer
+            total_facturado:
+              type: number
+
+    AdminAuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            token:
               type: string
-              enum: [connected, disconnected, error]
+            admin:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                fullName:
+                  type: string
+                role:
+                  type: string
+                  enum: [super_admin, finance, operations, viewer]
+
+    DashboardStats:
+      type: object
+      properties:
+        totalInvoices:
+          type: integer
+        totalAmount:
+          type: number
+        totalProntoPago:
+          type: integer
+        prontoPagoAmount:
+          type: number
+        totalStandard:
+          type: integer
+        standardAmount:
+          type: number
+        prontoPagoFees:
+          type: number
+
+    ApiKeyInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        key_prefix:
+          type: string
+          description: Primeros 12 caracteres del key (pk_xxxxxxxx)
+        scopes:
+          type: array
+          items:
+            type: string
+        rate_limit_per_minute:
+          type: integer
+        rate_limit_per_day:
+          type: integer
+        is_active:
+          type: boolean
+        status:
+          type: string
+          enum: [active, expired, revoked]
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        total_requests:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+
+    CreateApiKeyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            key:
+              type: string
+              description: La API key completa - SOLO SE MUESTRA UNA VEZ
+            prefix:
+              type: string
+            scopes:
+              type: array
+              items:
+                type: string
+            expires_at:
+              type: string
+              format: date-time

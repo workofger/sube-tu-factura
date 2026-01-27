@@ -369,3 +369,166 @@ export async function exportInvoicesJSON(
   const result = await apiRequest(`/api/admin/export?${params.toString()}`);
   return result;
 }
+
+/**
+ * Export payments XLSX (Shinkansen format for bank transfers)
+ */
+export interface PaymentExportFilters {
+  week: number;
+  year: number;
+  project?: string;
+  status?: string;
+}
+
+export async function exportPaymentsXLSX(
+  filters: PaymentExportFilters
+): Promise<{ success: boolean; message: string }> {
+  const token = getStoredToken();
+  
+  const params = new URLSearchParams();
+  params.set('week', filters.week.toString());
+  params.set('year', filters.year.toString());
+  if (filters.project) params.set('project', filters.project);
+  if (filters.status) params.set('status', filters.status);
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin/export-payments?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      return { success: false, message: error.message || 'Error al exportar pagos' };
+    }
+
+    // Get filename from Content-Disposition header
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = `Pago_Drivers_sem_${String(filters.week).padStart(2, '0')}_${filters.year}.xlsx`;
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="(.+)"/);
+      if (match) filename = match[1];
+    }
+
+    // Download the file
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return { success: true, message: 'Archivo de pagos descargado' };
+  } catch (error) {
+    console.error('Payment export error:', error);
+    return { success: false, message: 'Error de conexión al exportar pagos' };
+  }
+}
+
+// ========== System Config ==========
+
+export interface SystemConfig {
+  key: string;
+  value: Record<string, unknown>;
+  description: string | null;
+  category: string;
+  is_sensitive: boolean;
+  updated_at: string;
+}
+
+export async function getSystemConfig(key?: string): Promise<{
+  success: boolean;
+  data?: SystemConfig | SystemConfig[];
+  message: string;
+}> {
+  const endpoint = key 
+    ? `/api/admin/config?key=${encodeURIComponent(key)}`
+    : '/api/admin/config';
+  
+  return apiRequest(endpoint);
+}
+
+export async function updateSystemConfig(
+  key: string,
+  value: Record<string, unknown>,
+  description?: string
+): Promise<{
+  success: boolean;
+  data?: SystemConfig;
+  message: string;
+}> {
+  return apiRequest(`/api/admin/config?key=${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ value, description }),
+  });
+}
+
+// ========== API Keys ==========
+
+export interface ApiKeyInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  key_prefix: string;
+  scopes: string[];
+  rate_limit_per_minute: number;
+  rate_limit_per_day: number;
+  is_active: boolean;
+  created_at: string;
+  last_used_at: string | null;
+  total_requests: number;
+  expires_at: string | null;
+  status: 'active' | 'expired' | 'revoked';
+}
+
+export interface CreateApiKeyResponse {
+  id: string;
+  name: string;
+  key: string; // Full key - only shown once!
+  prefix: string;
+  scopes: string[];
+  expires_at: string | null;
+}
+
+export async function listApiKeys(): Promise<{
+  success: boolean;
+  data?: ApiKeyInfo[];
+  message: string;
+}> {
+  return apiRequest('/api/admin/api-keys');
+}
+
+export async function createApiKey(params: {
+  name: string;
+  description?: string;
+  scopes?: string[];
+  rate_limit_per_minute?: number;
+  rate_limit_per_day?: number;
+  expires_in_days?: number;
+}): Promise<{
+  success: boolean;
+  data?: CreateApiKeyResponse;
+  message: string;
+}> {
+  return apiRequest('/api/admin/api-keys', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+export async function revokeApiKey(id: string): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  return apiRequest(`/api/admin/api-keys?id=${id}`, {
+    method: 'DELETE',
+  });
+}

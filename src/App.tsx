@@ -6,7 +6,7 @@ import { AdminAuthProvider } from './contexts/AdminAuthContext';
 
 // Pages
 import UploadPage from './pages/Upload';
-import { Login, Dashboard, Invoices, Reports } from './pages/admin';
+import { Login, Dashboard, Invoices, Reports, Settings, ApiKeys } from './pages/admin';
 
 // Components
 import { ProtectedRoute } from './components/admin';
@@ -46,6 +46,22 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <Reports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="api-keys"
+                  element={
+                    <ProtectedRoute>
+                      <ApiKeys />
                     </ProtectedRoute>
                   }
                 />

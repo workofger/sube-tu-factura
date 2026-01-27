@@ -8,7 +8,9 @@ import {
   FileCheck,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  Settings,
+  Key
 } from 'lucide-react';
 import { useAdminAuthContext } from '../../contexts/AdminAuthContext';
 
@@ -22,10 +24,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { adminUser, signOut } = useAdminAuthContext();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
+  const isSuperAdmin = adminUser?.role === 'super_admin';
+
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Facturas', href: '/admin/invoices', icon: FileText },
     { name: 'Reportes', href: '/admin/reports', icon: Download },
+    ...(isSuperAdmin ? [
+      { name: 'Configuración', href: '/admin/settings', icon: Settings },
+      { name: 'API Keys', href: '/admin/api-keys', icon: Key },
+    ] : []),
   ];
 
   const handleLogout = async () => {

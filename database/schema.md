@@ -1,7 +1,7 @@
 # Base de Datos - Sistema de Gestion de Facturas CFDI
 
 > **Motor:** PostgreSQL (Supabase)  
-> **Version:** 2.0.0  
+> **Version:** 3.0.0  
 > **Fecha:** Enero 2026
 
 ---
@@ -9,8 +9,8 @@
 ## Arquitectura de la Base de Datos
 
 ```
-                           SISTEMA DE FACTURAS CFDI v2.0
-                      (Soporte para Flotilleros y Drivers)
+                           SISTEMA DE FACTURAS CFDI v3.0
+          (Flotilleros, Drivers, Admin, API Keys, Pronto Pago, User Auth)
 +-----------------------------------------------------------------------------+
 |                                                                             |
 |  +----------------+         +----------------+         +------------------+ |
@@ -32,17 +32,37 @@
 |  +----------------+         +----------------+         +------------------+ |
 |                                                                             |
 |  +-----------------------------------------------------------------------+  |
+|  |                      ADMINISTRACION Y SEGURIDAD                       |  |
+|  |  admin_users | admin_audit_log | api_keys | api_key_usage_log         |  |
+|  +-----------------------------------------------------------------------+  |
+|                                                                             |
+|  +-----------------------------------------------------------------------+  |
+|  |                    AUTENTICACION DE USUARIOS                          |  |
+|  |  user_sessions | user_auth_log | (campos auth en flotilleros)         |  |
+|  +-----------------------------------------------------------------------+  |
+|                                                                             |
+|  +-----------------------------------------------------------------------+  |
+|  |                      CONFIGURACION DEL SISTEMA                        |  |
+|  |  system_config (payment_source_account, pronto_pago_config, etc.)     |  |
+|  +-----------------------------------------------------------------------+  |
+|                                                                             |
+|  +-----------------------------------------------------------------------+  |
 |  |                     CATALOGOS (ENUMS/LOOKUP)                          |  |
 |  |  projects | fiscal_regimes | payment_methods | invoice_status         |  |
+|  |  payment_program | admin_role | biller_type | driver_status           |  |
 |  +-----------------------------------------------------------------------+  |
 +-----------------------------------------------------------------------------+
 
 RELACIONES CLAVE:
 - flotilleros 1:N drivers (un flotillero puede tener muchos drivers)
 - flotilleros 1:N invoices (un flotillero emite muchas facturas)
+- flotilleros 1:N user_sessions (sesiones de autenticación del usuario)
 - drivers N:1 flotilleros (un driver pertenece a un flotillero o es independiente)
 - invoices N:1 flotilleros (biller_id: quien emite la factura)
 - invoices N:1 drivers (operated_by_driver_id: quien hizo el trabajo)
+- admin_users 1:N admin_audit_log (registro de acciones de admin)
+- admin_users 1:N api_keys (llaves de API creadas)
+- api_keys 1:N api_key_usage_log (logs de uso de API)
 ```
 
 ---
@@ -60,11 +80,15 @@ RELACIONES CLAVE:
 9. [Tabla de Pagos](#9-tabla-de-pagos-payments)
 10. [Tabla de Historial de Pagos](#10-tabla-de-historial-payment_history)
 11. [Tabla de Auditoria](#11-tabla-de-auditoria-audit_log)
-12. [Indices](#12-indices)
-13. [Funciones y Triggers](#13-funciones-y-triggers)
-14. [Vistas](#14-vistas)
-15. [Row Level Security (RLS)](#15-row-level-security-rls)
-16. [Queries de Ejemplo](#16-queries-de-ejemplo)
+12. [Tabla de Usuarios Administrativos](#12-tabla-de-usuarios-administrativos-admin_users)
+13. [Tabla de Configuracion del Sistema](#13-tabla-de-configuracion-del-sistema-system_config)
+14. [Tabla de API Keys](#14-tabla-de-api-keys)
+15. [Autenticacion de Usuarios](#15-autenticacion-de-usuarios-flotilleros)
+16. [Indices](#16-indices)
+17. [Funciones y Triggers](#17-funciones-y-triggers)
+18. [Vistas](#18-vistas)
+19. [Row Level Security (RLS)](#19-row-level-security-rls)
+20. [Queries de Ejemplo](#20-queries-de-ejemplo)
 
 ---
 
@@ -134,6 +158,20 @@ CREATE TYPE document_type AS ENUM (
     'rfc_constancia',      -- Constancia de situacion fiscal
     'bank_account',        -- Estado de cuenta bancario
     'other'                -- Otro
+);
+
+-- Programa de pago (NUEVO en v3.0)
+CREATE TYPE payment_program AS ENUM (
+    'standard',            -- Pago estandar (semana siguiente)
+    'pronto_pago'          -- Pago anticipado con costo financiero (8%)
+);
+
+-- Rol de administrador (NUEVO en v3.0)
+CREATE TYPE admin_role AS ENUM (
+    'super_admin',         -- Acceso total al sistema
+    'finance',             -- Reportes y pagos
+    'operations',          -- Gestion de facturas
+    'viewer'               -- Solo lectura
 );
 ```
 
@@ -291,6 +329,7 @@ INSERT INTO cfdi_uses (code, name, applies_to) VALUES
 ## 4. Tabla de Flotilleros
 
 > **NUEVO en v2.0**: Entidad que emite facturas. Puede ser un flotillero (dueno de flota con multiples drivers) o un driver independiente.
+> **ACTUALIZADO en v3.0**: Se agregan campos bancarios y de autenticacion de usuarios.
 
 ```sql
 CREATE TABLE flotilleros (
@@ -316,23 +355,57 @@ CREATE TABLE flotilleros (
     status driver_status DEFAULT 'active',
     is_verified BOOLEAN DEFAULT false,
     
+    -- ===== CAMPOS BANCARIOS (NUEVO v3.0) =====
+    bank_name VARCHAR(100),                     -- Nombre del banco (BBVA, Santander, etc.)
+    bank_clabe VARCHAR(18),                     -- CLABE interbancaria 18 digitos
+    bank_account_number VARCHAR(20),            -- Numero de cuenta
+    bank_institution_id VARCHAR(50),            -- ID institucion (BBVA_MEXICO_MX)
+    
+    -- ===== CAMPOS DE AUTENTICACION (NUEVO v3.0) =====
+    auth_user_id UUID UNIQUE,                   -- ID de usuario autenticado
+    password_hash VARCHAR(255),                 -- Hash bcrypt de contrasena
+    magic_link_token VARCHAR(64),               -- Token para login sin contrasena
+    magic_link_expires_at TIMESTAMPTZ,          -- Expiracion del magic link
+    email_verified BOOLEAN DEFAULT false,       -- Si el email fue verificado
+    email_verification_token VARCHAR(64),       -- Token de verificacion de email
+    email_verification_expires_at TIMESTAMPTZ,  -- Expiracion del token
+    password_reset_token VARCHAR(64),           -- Token para resetear contrasena
+    password_reset_expires_at TIMESTAMPTZ,      -- Expiracion del reset token
+    last_login_at TIMESTAMPTZ,                  -- Ultimo login
+    failed_login_attempts INTEGER DEFAULT 0,    -- Intentos fallidos
+    locked_until TIMESTAMPTZ,                   -- Cuenta bloqueada hasta
+    
     -- Metadata
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     
     -- Constraints
-    CONSTRAINT valid_rfc CHECK (LENGTH(rfc) IN (12, 13))
+    CONSTRAINT valid_rfc CHECK (LENGTH(rfc) IN (12, 13)),
+    CONSTRAINT valid_flotillero_clabe CHECK (bank_clabe IS NULL OR LENGTH(bank_clabe) = 18)
 );
 
--- Indices
+-- Indices basicos
 CREATE INDEX idx_flotilleros_rfc ON flotilleros(rfc);
 CREATE INDEX idx_flotilleros_type ON flotilleros(type);
 CREATE INDEX idx_flotilleros_status ON flotilleros(status);
 
+-- Indices bancarios
+CREATE INDEX idx_flotilleros_bank_clabe ON flotilleros(bank_clabe) WHERE bank_clabe IS NOT NULL;
+
+-- Indices de autenticacion
+CREATE INDEX idx_flotilleros_email_auth ON flotilleros(email) WHERE email IS NOT NULL;
+CREATE INDEX idx_flotilleros_magic_link ON flotilleros(magic_link_token) WHERE magic_link_token IS NOT NULL;
+CREATE INDEX idx_flotilleros_auth_user ON flotilleros(auth_user_id) WHERE auth_user_id IS NOT NULL;
+
 COMMENT ON TABLE flotilleros IS 'Entidades que pueden emitir facturas: flotilleros (con multiples drivers) o independientes';
 COMMENT ON COLUMN flotilleros.type IS 'flotillero: puede tener multiples drivers asociados. independiente: driver que factura por si mismo';
 COMMENT ON COLUMN flotilleros.max_drivers IS 'Limite de drivers que puede tener asociados (1 para independientes)';
+COMMENT ON COLUMN flotilleros.bank_name IS 'Nombre del banco (ej: BBVA, Santander, Banorte)';
+COMMENT ON COLUMN flotilleros.bank_clabe IS 'CLABE interbancaria de 18 digitos';
+COMMENT ON COLUMN flotilleros.password_hash IS 'Hash bcrypt de la contrasena del usuario';
+COMMENT ON COLUMN flotilleros.magic_link_token IS 'Token para login sin contrasena (magic link)';
+COMMENT ON COLUMN flotilleros.locked_until IS 'Fecha hasta la cual la cuenta esta bloqueada por intentos fallidos';
 ```
 
 ---
@@ -421,14 +494,16 @@ CREATE TABLE driver_documents (
 
 ## 6. Tabla de Facturas (invoices)
 
+> **ACTUALIZADO en v3.0**: Se agregan campos para Pronto Pago.
+
 ```sql
 CREATE TABLE invoices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     
     -- Relaciones principales
     driver_id UUID NOT NULL REFERENCES drivers(id),
-    biller_id UUID REFERENCES flotilleros(id),           -- NUEVO: quien emite la factura
-    operated_by_driver_id UUID REFERENCES drivers(id),   -- NUEVO: quien hizo el trabajo
+    biller_id UUID REFERENCES flotilleros(id),           -- quien emite la factura
+    operated_by_driver_id UUID REFERENCES drivers(id),   -- quien hizo el trabajo
     project_id UUID REFERENCES projects(id),
     
     -- Identificadores CFDI
@@ -479,6 +554,13 @@ CREATE TABLE invoices (
     -- Estado
     status invoice_status DEFAULT 'pending_review',
     
+    -- ===== CAMPOS DE PRONTO PAGO (NUEVO v3.0) =====
+    payment_program payment_program DEFAULT 'standard',  -- standard o pronto_pago
+    pronto_pago_fee_rate DECIMAL(5,4) DEFAULT 0,         -- Tasa (ej: 0.08 = 8%)
+    pronto_pago_fee_amount DECIMAL(18,2) DEFAULT 0,      -- Monto del costo financiero
+    net_payment_amount DECIMAL(18,2),                     -- Monto neto a pagar
+    scheduled_payment_date DATE,                          -- Fecha programada de pago
+    
     -- Notas y observaciones
     notes TEXT,
     rejection_reason TEXT,
@@ -510,8 +592,17 @@ CREATE INDEX idx_invoices_payment_week ON invoices(payment_year, payment_week);
 CREATE INDEX idx_invoices_uuid ON invoices(uuid);
 CREATE INDEX idx_invoices_issuer_rfc ON invoices(issuer_rfc);
 
+-- Indices para Pronto Pago
+CREATE INDEX idx_invoices_payment_program ON invoices(payment_program);
+CREATE INDEX idx_invoices_scheduled_payment ON invoices(scheduled_payment_date);
+
 COMMENT ON COLUMN invoices.biller_id IS 'Flotillero o independiente que emite la factura';
 COMMENT ON COLUMN invoices.operated_by_driver_id IS 'Driver que realizo el trabajo/entrega (opcional)';
+COMMENT ON COLUMN invoices.payment_program IS 'Programa de pago: standard (semana siguiente) o pronto_pago (inmediato con descuento)';
+COMMENT ON COLUMN invoices.pronto_pago_fee_rate IS 'Tasa de costo financiero para pronto pago (ej: 0.08 = 8%)';
+COMMENT ON COLUMN invoices.pronto_pago_fee_amount IS 'Monto del costo financiero calculado (total_amount * fee_rate)';
+COMMENT ON COLUMN invoices.net_payment_amount IS 'Monto neto a pagar al emisor (total_amount - pronto_pago_fee_amount)';
+COMMENT ON COLUMN invoices.scheduled_payment_date IS 'Fecha programada para el pago';
 ```
 
 ---
@@ -728,7 +819,253 @@ CREATE INDEX idx_audit_log_user ON audit_log(user_id);
 
 ---
 
-## 12. Indices
+## 12. Tabla de Usuarios Administrativos (admin_users)
+
+> **NUEVO en v3.0**: Sistema de administracion con roles y permisos.
+
+```sql
+CREATE TABLE admin_users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Vinculacion con autenticacion
+    auth_user_id UUID UNIQUE NOT NULL,          -- Referencia a auth.users en Supabase
+    
+    -- Informacion del usuario
+    email VARCHAR(255) UNIQUE NOT NULL,
+    full_name VARCHAR(200) NOT NULL,
+    
+    -- Rol y permisos
+    role admin_role DEFAULT 'viewer',           -- super_admin, finance, operations, viewer
+    
+    -- Estado
+    is_active BOOLEAN DEFAULT true,
+    
+    -- Auditoria
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    last_login_at TIMESTAMPTZ,
+    
+    -- Constraints
+    CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+);
+
+-- Indices
+CREATE INDEX idx_admin_users_email ON admin_users(email);
+CREATE INDEX idx_admin_users_auth_id ON admin_users(auth_user_id);
+CREATE INDEX idx_admin_users_role ON admin_users(role);
+CREATE INDEX idx_admin_users_active ON admin_users(is_active) WHERE is_active = true;
+
+COMMENT ON TABLE admin_users IS 'Usuarios administrativos del sistema FacturaFlow';
+COMMENT ON COLUMN admin_users.role IS 'super_admin: todo, finance: reportes/pagos, operations: facturas, viewer: solo lectura';
+
+-- Tabla de auditoria de acciones de admin
+CREATE TABLE admin_audit_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    admin_user_id UUID REFERENCES admin_users(id),
+    action VARCHAR(100) NOT NULL,               -- login, logout, view, export, update_status
+    entity_type VARCHAR(50),                    -- invoice, driver, flotillero
+    entity_id UUID,
+    details JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_admin_audit_admin_id ON admin_audit_log(admin_user_id);
+CREATE INDEX idx_admin_audit_action ON admin_audit_log(action);
+CREATE INDEX idx_admin_audit_created ON admin_audit_log(created_at DESC);
+```
+
+---
+
+## 13. Tabla de Configuracion del Sistema (system_config)
+
+> **NUEVO en v3.0**: Configuraciones globales administrables desde el panel de admin.
+
+```sql
+CREATE TABLE system_config (
+    key VARCHAR(100) PRIMARY KEY,
+    value JSONB NOT NULL,
+    description TEXT,
+    category VARCHAR(50) DEFAULT 'general',     -- payments, export, notifications, etc.
+    is_sensitive BOOLEAN DEFAULT false,         -- Ocultar valores en UI
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_by UUID REFERENCES admin_users(id)
+);
+
+CREATE INDEX idx_system_config_category ON system_config(category);
+
+COMMENT ON TABLE system_config IS 'Configuraciones globales del sistema administrables';
+COMMENT ON COLUMN system_config.category IS 'Categoria para agrupar (payments, export, notifications)';
+
+-- Configuraciones iniciales
+INSERT INTO system_config (key, value, description, category) VALUES
+('payment_source_account', '{
+    "account_number": "012180001182078281",
+    "institution_id": "BBVA_MEXICO_MX",
+    "institution_name": "BBVA Mexico",
+    "account_type": "clabe"
+}', 'Cuenta bancaria origen para dispersion de pagos', 'payments'),
+
+('pronto_pago_config', '{
+    "fee_rate": 0.08,
+    "processing_days": 1,
+    "enabled": true
+}', 'Configuracion del programa Pronto Pago', 'payments'),
+
+('payment_week_config', '{
+    "allowed_weeks_behind": 3,
+    "payment_day": "monday",
+    "cutoff_day": "friday"
+}', 'Configuracion de ventanas de pago por semana', 'payments'),
+
+('export_config', '{
+    "xlsx_template": "shinkansen",
+    "include_pending": false,
+    "default_currency": "MXN"
+}', 'Configuracion para exportacion de archivos de pago', 'export');
+```
+
+---
+
+## 14. Tabla de API Keys
+
+> **NUEVO en v3.0**: Sistema de API Keys para acceso programatico.
+
+```sql
+CREATE TABLE api_keys (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Identificacion
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    
+    -- Seguridad
+    key_hash VARCHAR(64) NOT NULL,              -- SHA-256 del key completo
+    key_prefix VARCHAR(12) NOT NULL UNIQUE,      -- Prefijo para identificacion (pk_xxxxxxxx)
+    
+    -- Permisos
+    scopes TEXT[] DEFAULT ARRAY['public'],       -- public, admin, export, user
+    
+    -- Rate limiting
+    rate_limit_per_minute INTEGER DEFAULT 60,
+    rate_limit_per_day INTEGER DEFAULT 10000,
+    
+    -- Estado
+    is_active BOOLEAN DEFAULT true,
+    
+    -- Auditoria
+    created_by UUID REFERENCES admin_users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_used_at TIMESTAMPTZ,
+    last_used_ip VARCHAR(45),
+    total_requests INTEGER DEFAULT 0,
+    
+    -- Expiracion opcional
+    expires_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_api_keys_prefix ON api_keys(key_prefix);
+CREATE INDEX idx_api_keys_active ON api_keys(is_active) WHERE is_active = true;
+
+COMMENT ON TABLE api_keys IS 'API Keys para acceso programatico a la API';
+COMMENT ON COLUMN api_keys.key_hash IS 'Hash SHA-256 del API key (nunca almacenar en texto plano)';
+COMMENT ON COLUMN api_keys.scopes IS 'Permisos: public, admin, export, user';
+
+-- Tabla de logs de uso de API Keys
+CREATE TABLE api_key_usage_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    api_key_id UUID NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
+    
+    -- Request info
+    endpoint VARCHAR(200) NOT NULL,
+    method VARCHAR(10) NOT NULL,
+    status_code INTEGER,
+    
+    -- Metadata
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    
+    -- Timestamp
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_api_key_usage_key ON api_key_usage_log(api_key_id);
+CREATE INDEX idx_api_key_usage_date ON api_key_usage_log(created_at);
+```
+
+---
+
+## 15. Autenticacion de Usuarios (flotilleros)
+
+> **NUEVO en v3.0**: Sistema de login para flotilleros y drivers independientes.
+
+### 15.1 Tabla de Sesiones de Usuario
+
+```sql
+CREATE TABLE user_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    flotillero_id UUID NOT NULL REFERENCES flotilleros(id) ON DELETE CASCADE,
+    
+    -- Token de sesion
+    token_hash VARCHAR(64) NOT NULL,            -- SHA-256 del token
+    
+    -- Metadata de sesion
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    device_info JSONB,
+    
+    -- Timestamps
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    last_activity_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Estado
+    is_active BOOLEAN DEFAULT true,
+    revoked_at TIMESTAMPTZ,
+    revoked_reason VARCHAR(100)
+);
+
+CREATE INDEX idx_user_sessions_flotillero ON user_sessions(flotillero_id);
+CREATE INDEX idx_user_sessions_token ON user_sessions(token_hash);
+CREATE INDEX idx_user_sessions_active ON user_sessions(is_active, expires_at) WHERE is_active = true;
+
+COMMENT ON TABLE user_sessions IS 'Sesiones activas de usuarios (flotilleros/drivers)';
+```
+
+### 15.2 Tabla de Auditoria de Autenticacion
+
+```sql
+CREATE TABLE user_auth_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    flotillero_id UUID REFERENCES flotilleros(id) ON DELETE SET NULL,
+    
+    -- Tipo de evento
+    event_type VARCHAR(50) NOT NULL,            -- login, logout, failed_login, password_reset, magic_link
+    
+    -- Resultado
+    success BOOLEAN NOT NULL,
+    failure_reason TEXT,
+    
+    -- Metadata
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    metadata JSONB,
+    
+    -- Timestamp
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_user_auth_log_flotillero ON user_auth_log(flotillero_id);
+CREATE INDEX idx_user_auth_log_event ON user_auth_log(event_type);
+CREATE INDEX idx_user_auth_log_date ON user_auth_log(created_at);
+
+COMMENT ON TABLE user_auth_log IS 'Log de eventos de autenticacion para auditoria';
+```
+
+---
+
+## 16. Indices
 
 ```sql
 -- Indices adicionales para optimizacion
@@ -763,7 +1100,7 @@ WHERE status = 'active';
 
 ---
 
-## 13. Funciones y Triggers
+## 17. Funciones y Triggers
 
 ### 13.1 Funcion para actualizar updated_at
 
@@ -900,7 +1237,7 @@ CREATE TRIGGER update_invoices_on_payment
 
 ---
 
-## 14. Vistas
+## 18. Vistas
 
 ### 14.1 Vista de facturas con detalles completos
 
@@ -1053,7 +1390,7 @@ GROUP BY f.id, f.fiscal_name, f.rfc, f.type, f.status;
 
 ---
 
-## 15. Row Level Security (RLS)
+## 19. Row Level Security (RLS)
 
 ```sql
 -- Habilitar RLS en tablas principales
@@ -1117,9 +1454,9 @@ CREATE POLICY "Admins have full access to payments" ON payments
 
 ---
 
-## 16. Queries de Ejemplo
+## 20. Queries de Ejemplo
 
-### 16.1 Insertar factura con soporte para flotilleros
+### 20.1 Insertar factura con soporte para flotilleros
 
 ```sql
 -- Funcion para insertar factura considerando flotilleros
@@ -1267,7 +1604,7 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-### 16.2 Obtener drivers de un flotillero
+### 20.2 Obtener drivers de un flotillero
 
 ```sql
 SELECT 
@@ -1285,7 +1622,7 @@ GROUP BY d.id, d.first_name, d.last_name, d.rfc, d.email, d.status
 ORDER BY d.first_name;
 ```
 
-### 16.3 Reporte de facturacion por flotillero
+### 20.3 Reporte de facturacion por flotillero
 
 ```sql
 SELECT 
@@ -1359,5 +1696,21 @@ Ejecutar el archivo `002_add_flotilleros.sql` que:
 ---
 
 **Generado para:** FacturaFlow AI  
-**Version del esquema:** 2.0.0  
+**Version del esquema:** 3.0.0  
 **Ultima actualizacion:** Enero 2026
+
+---
+
+## Historial de Migraciones
+
+| Migracion | Descripcion |
+|-----------|-------------|
+| 001_initial_schema.sql | Esquema inicial con facturas y drivers |
+| 002_add_flotilleros.sql | Agregar soporte para flotilleros |
+| 003_add_pronto_pago.sql | Programa de pago anticipado con 8% descuento |
+| 004_add_admin_users.sql | Sistema de administracion con roles |
+| 005_seed_admin_user.sql | Usuario administrador inicial |
+| 006_add_bank_info.sql | Informacion bancaria en flotilleros |
+| 007_add_system_config.sql | Configuracion del sistema administrable |
+| 008_add_api_keys.sql | Sistema de API Keys |
+| 009_add_user_auth.sql | Autenticacion de usuarios (flotilleros/drivers) |
