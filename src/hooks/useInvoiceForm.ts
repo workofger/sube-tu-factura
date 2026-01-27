@@ -1,9 +1,14 @@
 import { useState, useCallback, useMemo } from 'react';
-import { InvoiceData, InvoiceItem, ProjectType, PaymentProgram, PRONTO_PAGO_FEE_RATE } from '../types/invoice';
+import { InvoiceData, InvoiceItem, ProjectType, PaymentProgram, PRONTO_PAGO_FEE_RATE, LateInvoiceReason } from '../types/invoice';
 
 const initialFormData: InvoiceData = {
   week: '',
+  year: new Date().getFullYear(),
   project: ProjectType.MERCADO_LIBRE,
+  // Late invoice fields
+  isLate: false,
+  lateReason: undefined,
+  lateAcknowledged: false,
   rfc: '',
   billerName: '',
   issuerRegime: '',
@@ -80,8 +85,30 @@ export const useInvoiceForm = () => {
     setIsConfirmed(false);
   }, []);
 
-  const setWeek = useCallback((week: string) => {
-    setFormData(prev => ({ ...prev, week }));
+  const setWeek = useCallback((week: string, year?: number) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      week,
+      year: year ?? prev.year,
+    }));
+  }, []);
+
+  // Set late invoice info
+  const setLateInvoiceInfo = useCallback((isLate: boolean, reason?: LateInvoiceReason) => {
+    setFormData(prev => ({
+      ...prev,
+      isLate,
+      lateReason: reason,
+      lateAcknowledged: false, // Reset acknowledgment when late status changes
+    }));
+  }, []);
+
+  // Acknowledge late invoice
+  const acknowledgeLateInvoice = useCallback(() => {
+    setFormData(prev => ({
+      ...prev,
+      lateAcknowledged: true,
+    }));
   }, []);
 
   const toggleConfirmation = useCallback(() => {
@@ -167,5 +194,8 @@ export const useInvoiceForm = () => {
     setPaymentProgram,
     recalculateProntoPago,
     prontoPagoPreview,
+    // Late invoice
+    setLateInvoiceInfo,
+    acknowledgeLateInvoice,
   };
 };

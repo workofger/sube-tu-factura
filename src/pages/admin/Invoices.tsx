@@ -11,7 +11,9 @@ import {
   Eye,
   X,
   Loader2,
-  Building2
+  Building2,
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -28,6 +30,8 @@ interface FilterState {
   project: string;
   paymentProgram: string;
   status: string;
+  needsReview: boolean;
+  isLate: boolean;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -48,6 +52,8 @@ const Invoices: React.FC = () => {
     project: '',
     paymentProgram: '',
     status: '',
+    needsReview: false,
+    isLate: false,
   });
 
   // Fetch invoices
@@ -65,6 +71,8 @@ const Invoices: React.FC = () => {
     if (filters.project) apiFilters.project = filters.project;
     if (filters.paymentProgram) apiFilters.paymentProgram = filters.paymentProgram;
     if (filters.status) apiFilters.status = filters.status;
+    if (filters.needsReview) apiFilters.needsReview = true;
+    if (filters.isLate) apiFilters.isLate = true;
 
     const result = await getInvoices(apiFilters);
 
@@ -214,6 +222,31 @@ const Invoices: React.FC = () => {
                 <option value="paid">Pagada</option>
               </select>
             </div>
+          </div>
+          
+          {/* Quick Filters Row */}
+          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-slate-700/30">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.needsReview}
+                onChange={(e) => setFilters(prev => ({ ...prev, needsReview: e.target.checked }))}
+                className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500"
+              />
+              <AlertCircle className="w-4 h-4 text-amber-400" />
+              <span className="text-slate-300 text-sm">Requiere revisión de proyecto</span>
+            </label>
+            
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.isLate}
+                onChange={(e) => setFilters(prev => ({ ...prev, isLate: e.target.checked }))}
+                className="w-4 h-4 rounded border-slate-600 text-orange-500 focus:ring-orange-500"
+              />
+              <AlertTriangle className="w-4 h-4 text-orange-400" />
+              <span className="text-slate-300 text-sm">Extemporáneas</span>
+            </label>
           </div>
         )}
       </div>

@@ -14,10 +14,19 @@ export type PaymentProgram = 'standard' | 'pronto_pago';
 // Pronto Pago fee configuration
 export const PRONTO_PAGO_FEE_RATE = 0.08; // 8%
 
+// Late invoice reason type
+export type LateInvoiceReason = 'after_deadline' | 'wrong_week';
+
 export interface InvoiceData {
   // Selection fields
   week: string;
+  year: number;
   project: string;
+  
+  // Late invoice flags
+  isLate: boolean;
+  lateReason?: LateInvoiceReason;
+  lateAcknowledged: boolean;
   
   // Issuer (Emisor) fields
   rfc: string;
@@ -86,6 +95,8 @@ export enum ProjectType {
 export interface ExtractionResult {
   week?: number;
   project?: string;
+  projectConfidence?: number; // 0.0 - 1.0
+  needsProjectReview?: boolean;
   
   // Issuer
   rfc?: string;
@@ -136,7 +147,13 @@ export interface WebhookPayload {
   // Metadata
   submittedAt: string;
   week: number;
+  year: number;
   project: string;
+  
+  // Late invoice info
+  isLate: boolean;
+  lateReason?: LateInvoiceReason;
+  lateAcknowledgedAt?: string;
   
   // Issuer (Emisor)
   issuer: {

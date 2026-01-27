@@ -7,7 +7,7 @@ import { UserAuthProvider } from './contexts/UserAuthContext';
 
 // Admin Pages
 import UploadPage from './pages/Upload';
-import { Login, Dashboard, Invoices, Reports, Settings, ApiKeys, Users } from './pages/admin';
+import { Login, Dashboard, Invoices, Reports, Settings, ApiKeys, Users, Projects } from './pages/admin';
 
 // User Portal Pages
 import { UserLogin, UserDashboard, UserInvoices, UserProfile, Onboarding } from './pages/user';
@@ -75,6 +75,14 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <ApiKeys />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="projects"
+                  element={
+                    <ProtectedRoute>
+                      <Projects />
                     </ProtectedRoute>
                   }
                 />

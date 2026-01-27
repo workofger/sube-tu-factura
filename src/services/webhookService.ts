@@ -42,7 +42,13 @@ export const buildWebhookPayload = async (formData: InvoiceData): Promise<Webhoo
     // Metadata
     submittedAt: new Date().toISOString(),
     week: parseInt(formData.week, 10) || 1,
+    year: formData.year || new Date().getFullYear(),
     project: formData.project,
+
+    // Late invoice info
+    isLate: formData.isLate || false,
+    lateReason: formData.lateReason,
+    lateAcknowledgedAt: formData.lateAcknowledged ? new Date().toISOString() : undefined,
 
     // Issuer (Emisor)
     issuer: {

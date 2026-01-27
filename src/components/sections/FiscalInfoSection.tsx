@@ -1,13 +1,13 @@
 import React from 'react';
-import { User, ShieldCheck, Calendar, Hash, AlertTriangle } from 'lucide-react';
-import { InputField, SelectField, ProjectSelect } from '../common';
+import { User, ShieldCheck, Calendar, Hash, AlertTriangle, Clock, Info } from 'lucide-react';
+import { InputField, ProjectSelect } from '../common';
 import { InvoiceData } from '../../types/invoice';
 import { CONFIG } from '../../constants/config';
 import { Project } from '../../hooks/useProjects';
+import { getValidPeriodDescription, formatDeadline } from '../../utils/dates';
 
 interface FiscalInfoSectionProps {
   formData: InvoiceData;
-  weekOptions: { value: string; label: string }[];
   projects: Project[];
   projectsLoading?: boolean;
   onFieldChange: <K extends keyof InvoiceData>(field: K, value: InvoiceData[K]) => void;
@@ -15,13 +15,14 @@ interface FiscalInfoSectionProps {
 
 export const FiscalInfoSection: React.FC<FiscalInfoSectionProps> = ({
   formData,
-  weekOptions,
   projects,
   projectsLoading = false,
   onFieldChange,
 }) => {
 
   const rfcMismatch = formData.receiverRfc && formData.receiverRfc !== CONFIG.EXPECTED_RECEIVER_RFC;
+  const validPeriod = getValidPeriodDescription();
+  const deadline = formatDeadline();
 
   return (
     <div className="space-y-6">
@@ -106,14 +107,50 @@ export const FiscalInfoSection: React.FC<FiscalInfoSectionProps> = ({
         )}
       </div>
 
-      {/* Week & Project */}
+      {/* Week Info (Read-only) & Project */}
       <div className="grid grid-cols-2 gap-4">
-        <SelectField
-          label="Semana de Pago"
-          options={weekOptions}
-          value={formData.week}
-          onChange={(e) => onFieldChange('week', e.target.value)}
-        />
+        {/* Week Info Box - Read Only */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">
+            Semana de Pago
+          </label>
+          <div className={`p-3 rounded-xl border ${
+            formData.isLate 
+              ? 'bg-amber-50 border-amber-300' 
+              : 'bg-blue-50 border-blue-200'
+          }`}>
+            {formData.week ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className={formData.isLate ? 'text-amber-600' : 'text-blue-600'} />
+                  <span className={`font-semibold ${formData.isLate ? 'text-amber-700' : 'text-blue-700'}`}>
+                    Semana {formData.week} - {formData.year}
+                  </span>
+                </div>
+                {formData.isLate && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-amber-600">
+                    <AlertTriangle size={12} />
+                    <span>Extemporánea - Se programará para el siguiente ciclo</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-gray-500">
+                <Info size={16} />
+                <span className="text-sm">Se calculará automáticamente</span>
+              </div>
+            )}
+          </div>
+          {/* Valid period info */}
+          <p className="text-xs text-gray-500 flex items-center gap-1">
+            <Clock size={12} />
+            Período válido: {validPeriod}
+          </p>
+          <p className="text-xs text-gray-500">
+            Deadline: {deadline}
+          </p>
+        </div>
+
         <ProjectSelect
           projects={projects}
           value={formData.project}

@@ -20,6 +20,10 @@ interface InvoiceListItem {
   created_at: string;
   project_name: string | null;
   project_code: string | null;
+  // Late invoice fields
+  is_late: boolean;
+  late_reason: string | null;
+  needs_project_review: boolean;
 }
 
 interface InvoicesResponse {
@@ -43,6 +47,8 @@ interface InvoicesResponse {
  * - project: string (project_id)
  * - paymentProgram: 'standard' | 'pronto_pago'
  * - status: string
+ * - needsReview: 'true' - filters invoices that need project review
+ * - isLate: 'true' - filters late invoices
  */
 export default async function handler(
   req: VercelRequest,
@@ -87,6 +93,8 @@ export default async function handler(
       project,
       paymentProgram,
       status,
+      needsReview,
+      isLate,
     } = req.query;
 
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
@@ -113,6 +121,9 @@ export default async function handler(
         invoice_date,
         status,
         created_at,
+        is_late,
+        late_reason,
+        needs_project_review,
         projects!left(name, code)
       `, { count: 'exact' });
 
@@ -140,6 +151,16 @@ export default async function handler(
 
     if (status) {
       query = query.eq('status', status);
+    }
+
+    // Filter for invoices that need project review
+    if (needsReview === 'true') {
+      query = query.or('needs_project_review.eq.true,project_id.is.null');
+    }
+
+    // Filter for late invoices
+    if (isLate === 'true') {
+      query = query.eq('is_late', true);
     }
 
     // Execute query with pagination
@@ -176,6 +197,10 @@ export default async function handler(
         created_at: inv.created_at as string,
         project_name: projects?.name as string | null ?? null,
         project_code: projects?.code as string | null ?? null,
+        // Late invoice fields
+        is_late: (inv.is_late as boolean) ?? false,
+        late_reason: (inv.late_reason as string) || null,
+        needs_project_review: (inv.needs_project_review as boolean) ?? false,
       };
     });
 

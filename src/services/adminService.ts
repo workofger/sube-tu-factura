@@ -62,6 +62,10 @@ export interface InvoiceListItem {
   created_at: string;
   project_name: string | null;
   project_code: string | null;
+  // Late invoice fields
+  is_late?: boolean;
+  late_reason?: string | null;
+  needs_project_review?: boolean;
 }
 
 export interface InvoicesResponse {
@@ -81,6 +85,8 @@ export interface InvoiceFilters {
   project?: string;
   paymentProgram?: string;
   status?: string;
+  needsReview?: boolean;
+  isLate?: boolean;
 }
 
 export interface ExportFilters {
@@ -271,6 +277,8 @@ export async function getInvoices(
   if (filters.project) params.set('project', filters.project);
   if (filters.paymentProgram) params.set('paymentProgram', filters.paymentProgram);
   if (filters.status) params.set('status', filters.status);
+  if (filters.needsReview) params.set('needsReview', 'true');
+  if (filters.isLate) params.set('isLate', 'true');
 
   const result = await apiRequest<InvoicesResponse>(
     `/api/admin/invoices?${params.toString()}`

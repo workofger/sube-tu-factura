@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Settings,
   Key,
-  Users
+  Users,
+  FolderKanban
 } from 'lucide-react';
 import { useAdminAuthContext } from '../../contexts/AdminAuthContext';
 
@@ -31,6 +32,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Facturas', href: '/admin/invoices', icon: FileText },
+    { name: 'Proyectos', href: '/admin/projects', icon: FolderKanban },
     { name: 'Reportes', href: '/admin/reports', icon: Download },
     ...(isOperations ? [
       { name: 'Usuarios', href: '/admin/users', icon: Users },

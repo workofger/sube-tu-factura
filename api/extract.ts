@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { ApiResponse } from './lib/types.js';
 import { applySecurityMiddleware } from './lib/rateLimit.js';
+import { getSupabaseClient } from './lib/supabase.js';
 
 /**
  * Extraction result interface
@@ -9,6 +10,8 @@ import { applySecurityMiddleware } from './lib/rateLimit.js';
 interface ExtractionResult {
   week?: number;
   project?: string;
+  projectConfidence?: number; // 0.0 - 1.0
+  needsProjectReview?: boolean;
   rfc?: string;
   billerName?: string;
   issuerRegime?: string;
@@ -54,6 +57,15 @@ interface ExtractPayload {
   pdfFilename?: string;
 }
 
+interface ProjectRecord {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  keywords: string[] | null;
+  ai_description: string | null;
+}
+
 // Initialize OpenAI with server-side API key
 const getOpenAIClient = () => {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -62,6 +74,56 @@ const getOpenAIClient = () => {
   }
   return new OpenAI({ apiKey });
 };
+
+/**
+ * Fetch active projects from database
+ */
+async function getActiveProjects(): Promise<ProjectRecord[]> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id, code, name, description, keywords, ai_description')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.warn('⚠️ Error fetching projects:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.warn('⚠️ Could not fetch projects:', err);
+    return [];
+  }
+}
+
+/**
+ * Build project context for AI prompt
+ */
+function buildProjectContext(projects: ProjectRecord[]): string {
+  if (projects.length === 0) {
+    return `Proyectos disponibles: MERCADO_LIBRE, AMAZON, WALMART, RAPPI, HOME_DEPOT, DINAMICA_FILMICA, OTRO`;
+  }
+
+  const projectList = projects.map(p => {
+    const keywords = p.keywords?.join(', ') || '';
+    const desc = p.ai_description || p.description || '';
+    return `- ${p.code}: ${p.name}${desc ? ` - ${desc}` : ''}${keywords ? ` (keywords: ${keywords})` : ''}`;
+  }).join('\n');
+
+  return `PROYECTOS DISPONIBLES EN EL SISTEMA:
+${projectList}
+- OTRO: Si no coincide claramente con ninguno de los anteriores
+
+IMPORTANTE SOBRE PROYECTOS:
+- Analiza las descripciones de los conceptos de la factura para determinar el proyecto
+- Busca palabras clave en: nombre del emisor, descripción de conceptos, condiciones de pago
+- Si encuentras coincidencia clara (>70% confianza), asigna el código del proyecto
+- Si no hay coincidencia clara, asigna "OTRO" y marca projectConfidence bajo
+- Responde con projectCode (código exacto) y projectConfidence (0.0 a 1.0)`;
+}
 
 /**
  * POST /api/extract
@@ -113,6 +175,13 @@ export default async function handler(
     console.log('  - XML:', payload.xmlContent ? `✅ (${payload.xmlContent.length} chars)` : '❌');
     console.log('  - PDF:', payload.pdfBase64 ? `✅ (${(payload.pdfBase64.length / 1024).toFixed(1)} KB)` : '❌');
 
+    // Fetch active projects for AI context
+    const projects = await getActiveProjects();
+    console.log('📁 Active projects:', projects.length);
+
+    const projectContext = buildProjectContext(projects);
+    const projectCodes = projects.map(p => p.code);
+
     const openai = getOpenAIClient();
 
     const systemPrompt = `Eres un experto en facturas CFDI mexicanas v4.0. Tu tarea es extraer TODOS los datos de la factura proporcionada.
@@ -129,7 +198,9 @@ INSTRUCCIONES DE EXTRACCIÓN:
      * Extrae TOTAL de retenciones ISR (Impuesto 001) en 'retentionIsr' y tasa en 'retentionIsrRate'.
    - Las tasas varían (0.04, 0.106667, 0.0125, 0.10). Extrae exactamente lo que está en el XML.
 6. CONCEPTOS: Extrae TODOS los Conceptos con descripción completa, cantidad, unidad, precioUnitario, importe, ClaveProdServ, ObjetoImp.
-7. PROYECTO: Busca en la Descripción del Concepto o Nombre del Emisor palabras clave: 'Mercado Libre', 'Amazon', 'Walmart', 'Rappi', 'Home Depot', etc.
+7. PROYECTO: Analiza la factura y determina el proyecto según las instrucciones abajo.
+
+${projectContext}
 
 Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
 
@@ -154,7 +225,11 @@ Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
       } as OpenAI.Chat.ChatCompletionContentPart);
     }
 
-    // Add final instruction
+    // Add final instruction with dynamic project list
+    const validProjectValues = projectCodes.length > 0 
+      ? `"${projectCodes.join('" | "')}" | "OTRO"`
+      : `"MERCADO_LIBRE" | "AMAZON" | "WALMART" | "RAPPI" | "HOME_DEPOT" | "DINAMICA_FILMICA" | "OTRO"`;
+
     userContent.push({
       type: 'text',
       text: `Extrae todos los datos y devuelve un JSON con esta estructura exacta:
@@ -168,7 +243,8 @@ Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
   "receiverRegime": "Régimen del receptor",
   "receiverZipCode": "CP del receptor",
   "cfdiUse": "Uso CFDI",
-  "project": "MERCADO LIBRE" | "AMAZON" | "WALMART" | "RAPPI" | "HOME DEPOT" | "OTRO",
+  "project": ${validProjectValues},
+  "projectConfidence": número entre 0.0 y 1.0 indicando confianza del match de proyecto,
   "invoiceDate": "YYYY-MM-DD",
   "folio": "Folio",
   "series": "Serie",
@@ -224,12 +300,19 @@ Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
 
     const result = JSON.parse(text) as ExtractionResult;
 
+    // Determine if project needs review
+    const confidence = result.projectConfidence ?? 0;
+    const needsReview = !result.project || result.project === 'OTRO' || confidence < 0.7;
+    result.needsProjectReview = needsReview;
+
     console.log('📋 Extraction complete:');
     console.log('  - Emisor:', result.billerName);
     console.log('  - RFC:', result.rfc);
     console.log('  - UUID:', result.uuid);
     console.log('  - Total:', result.totalAmount, result.currency);
     console.log('  - Items:', result.items?.length || 0);
+    console.log('  - Project:', result.project, `(confidence: ${confidence.toFixed(2)})`);
+    console.log('  - Needs review:', needsReview);
 
     return res.status(200).json({
       success: true,

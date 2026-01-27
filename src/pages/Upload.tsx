@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, Mail, ShieldCheck, CheckSquare } from 'lucide-react';
 
 // Hooks
-import { useWeekOptions } from '../hooks/useWeekOptions';
 import { useInvoiceForm } from '../hooks/useInvoiceForm';
 import { useInvoiceExtraction, ValidationAlert } from '../hooks/useInvoiceExtraction';
 import { useProjects } from '../hooks/useProjects';
@@ -12,7 +11,7 @@ import { submitInvoice, validateFormData } from '../services/webhookService';
 
 // Components
 import { Header, WhatsAppButton } from '../components/layout';
-import { AlertPopup, AlertType } from '../components/common';
+import { AlertPopup, AlertType, LateInvoiceModal } from '../components/common';
 import { 
   FileUploadSection, 
   FiscalInfoSection, 
@@ -21,8 +20,9 @@ import {
   PaymentProgramSelector 
 } from '../components/sections';
 
-// Validation utilities
+// Utilities
 import { validateMatchingFilenames } from '../utils/xmlParser';
+import { calculatePaymentWeek, getValidPeriodDescription, formatDeadline, LateReason } from '../utils/dates';
 
 const UploadPage: React.FC = () => {
   // Alert modal state (renamed to avoid conflict with window.alert)
@@ -39,11 +39,21 @@ const UploadPage: React.FC = () => {
     message: '',
   });
 
+  // Late invoice modal state
+  const [lateInvoiceModal, setLateInvoiceModal] = useState<{
+    isOpen: boolean;
+    reason: LateReason;
+    invoiceDate: string;
+  }>({
+    isOpen: false,
+    reason: 'after_deadline',
+    invoiceDate: '',
+  });
+
   // Filename error state
   const [filenameError, setFilenameError] = useState<string | null>(null);
 
   // Hooks
-  const { weekOptions, currentWeek } = useWeekOptions();
   const { projects, loading: projectsLoading } = useProjects();
   const { 
     formData, 
@@ -60,6 +70,9 @@ const UploadPage: React.FC = () => {
     // Pronto Pago
     setPaymentProgram,
     prontoPagoPreview,
+    // Late invoice
+    setLateInvoiceInfo,
+    acknowledgeLateInvoice,
   } = useInvoiceForm();
 
   // Handle validation alerts from extraction
@@ -95,13 +108,6 @@ const UploadPage: React.FC = () => {
     setAlertModal(prev => ({ ...prev, isOpen: false }));
   }, []);
 
-  // Set initial week when loaded
-  useEffect(() => {
-    if (currentWeek && !formData.week) {
-      setWeek(currentWeek);
-    }
-  }, [currentWeek, formData.week, setWeek]);
-
   // Validate filenames match when both files are uploaded
   useEffect(() => {
     if (formData.xmlFile && formData.pdfFile) {
@@ -130,6 +136,44 @@ const UploadPage: React.FC = () => {
     }
   }, [formData.xmlFile, formData.pdfFile, isExtracting, isValidating, filenameError, extractError, extractSuccess, handleExtraction, canAttemptExtraction]);
 
+  // Calculate payment week automatically after extraction success
+  useEffect(() => {
+    if (extractSuccess && formData.invoiceDate && !formData.week) {
+      const result = calculatePaymentWeek(formData.invoiceDate);
+      
+      // Set week and year
+      setWeek(result.week.toString(), result.year);
+      
+      // Set late invoice info
+      setLateInvoiceInfo(result.isLate, result.reason);
+      
+      // If late, show confirmation modal
+      if (result.isLate && result.reason) {
+        setLateInvoiceModal({
+          isOpen: true,
+          reason: result.reason,
+          invoiceDate: formData.invoiceDate,
+        });
+      }
+    }
+  }, [extractSuccess, formData.invoiceDate, formData.week, setWeek, setLateInvoiceInfo]);
+
+  // Handle late invoice confirmation
+  const handleLateInvoiceConfirm = useCallback(() => {
+    acknowledgeLateInvoice();
+    setLateInvoiceModal(prev => ({ ...prev, isOpen: false }));
+  }, [acknowledgeLateInvoice]);
+
+  // Handle late invoice cancellation (clear files)
+  const handleLateInvoiceCancel = useCallback(() => {
+    setLateInvoiceModal(prev => ({ ...prev, isOpen: false }));
+    // Reset the form to allow uploading different files
+    updateField('xmlFile', null);
+    updateField('pdfFile', null);
+    setWeek('');
+    setLateInvoiceInfo(false);
+  }, [updateField, setWeek, setLateInvoiceInfo]);
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +182,16 @@ const UploadPage: React.FC = () => {
     const validation = validateFormData(formData);
     if (!validation.valid) {
       alert(`Por favor corrige los siguientes errores:\n\n${validation.errors.join('\n')}`);
+      return;
+    }
+
+    // Check if late invoice needs acknowledgment
+    if (formData.isLate && !formData.lateAcknowledged) {
+      setLateInvoiceModal({
+        isOpen: true,
+        reason: formData.lateReason || 'after_deadline',
+        invoiceDate: formData.invoiceDate,
+      });
       return;
     }
 
@@ -196,7 +250,6 @@ const UploadPage: React.FC = () => {
               {/* Left Column: Fiscal Info */}
               <FiscalInfoSection
                 formData={formData}
-                weekOptions={weekOptions}
                 projects={projects}
                 projectsLoading={projectsLoading}
                 onFieldChange={updateField}
@@ -231,6 +284,16 @@ const UploadPage: React.FC = () => {
             {/* Confirmation & Footer */}
             <div className="pt-6 border-t border-gray-100 flex flex-col gap-6">
               
+              {/* Late Invoice Warning (if applicable) */}
+              {formData.isLate && formData.lateAcknowledged && (
+                <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                  <span className="text-amber-600">⚠️</span>
+                  <p className="text-sm text-amber-700">
+                    <strong>Factura extemporánea:</strong> Esta factura se programará para el siguiente ciclo de pago.
+                  </p>
+                </div>
+              )}
+
               {/* Confirmation Checkbox */}
               <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
                 <button 
@@ -273,9 +336,9 @@ const UploadPage: React.FC = () => {
 
                 <button 
                   type="submit" 
-                  disabled={!isConfirmed || isSubmitting}
+                  disabled={!isConfirmed || isSubmitting || (formData.isLate && !formData.lateAcknowledged)}
                   className={`font-bold text-lg py-3 px-8 rounded-xl shadow-lg transform transition-all duration-200 flex items-center gap-3 w-full md:w-auto justify-center
-                    ${isConfirmed && !isSubmitting
+                    ${isConfirmed && !isSubmitting && (!formData.isLate || formData.lateAcknowledged)
                       ? 'bg-[#B91C1C] hover:bg-[#991B1B] text-white shadow-red-200 hover:shadow-xl hover:shadow-red-100 hover:-translate-y-0.5' 
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
                     }
@@ -302,6 +365,17 @@ const UploadPage: React.FC = () => {
         title={alertModal.title}
         message={alertModal.message}
         details={alertModal.details}
+      />
+
+      {/* Late Invoice Modal */}
+      <LateInvoiceModal
+        isOpen={lateInvoiceModal.isOpen}
+        onClose={handleLateInvoiceCancel}
+        onConfirm={handleLateInvoiceConfirm}
+        reason={lateInvoiceModal.reason}
+        invoiceDate={lateInvoiceModal.invoiceDate}
+        validPeriod={getValidPeriodDescription()}
+        deadline={formatDeadline()}
       />
     </div>
   );

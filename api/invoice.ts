@@ -174,16 +174,21 @@ export default async function handler(
 
       // ===== STEP 7B: Upload to Google Drive (BACKUP) =====
       console.log('📤 [2/2] Attempting Google Drive upload (backup)...');
+      const isLate = payload.isLate || false;
+      if (isLate) {
+        console.log('⚠️ Late invoice - will be stored in Extemporaneas folder');
+      }
       try {
         driveResult = await uploadInvoiceFiles(
           payload.week,
-          invoiceYear,
+          payload.year || invoiceYear,
           payload.project,
           payload.issuer.rfc,
           payload.issuer.name,
           payload.invoice.uuid,
           hasXml,
-          hasPdf
+          hasPdf,
+          isLate // Pass late invoice flag for Extemporaneas folder
         );
         
         console.log('✅ Files uploaded to Google Drive:', driveResult.folderPath);

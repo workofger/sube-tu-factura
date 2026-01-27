@@ -258,11 +258,18 @@ export const insertInvoice = async (
     pronto_pago_fee_amount: payload.paymentProgram?.feeAmount || 0,
     net_payment_amount: payload.paymentProgram?.netAmount || payload.financial.totalAmount,
   };
+
+  // Late invoice fields (migration 011)
+  const lateInvoiceFields = {
+    is_late: payload.isLate || false,
+    late_reason: payload.lateReason || null,
+    late_acknowledged_at: payload.lateAcknowledgedAt || null,
+  };
   
-  // First attempt: with Pronto Pago fields
+  // First attempt: with Pronto Pago and Late Invoice fields
   let result = await client
     .from('invoices')
-    .insert({ ...invoiceData, ...prontoPagoFields })
+    .insert({ ...invoiceData, ...prontoPagoFields, ...lateInvoiceFields })
     .select()
     .single();
   

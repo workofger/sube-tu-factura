@@ -80,11 +80,20 @@ export interface FilesData {
   pdf?: FileData | null;
 }
 
+// Late invoice types
+export type LateInvoiceReason = 'after_deadline' | 'wrong_week';
+
 // Main Invoice Payload (from frontend)
 export interface InvoicePayload {
   submittedAt?: string;
   week: number;
+  year?: number;
   project: string;
+  // Late invoice fields
+  isLate?: boolean;
+  lateReason?: LateInvoiceReason;
+  lateAcknowledgedAt?: string;
+  // Entity data
   issuer: IssuerData;
   receiver: ReceiverData;
   invoice: InvoiceIdentification;
@@ -229,6 +238,12 @@ export interface DbInvoice {
   pronto_pago_fee_amount?: number;
   net_payment_amount?: number;
   scheduled_payment_date?: string;
+  // Late invoice fields
+  is_late?: boolean;
+  late_reason?: LateInvoiceReason;
+  late_acknowledged_at?: string;
+  needs_project_review?: boolean;
+  project_match_confidence?: number;
   // Contact and status
   contact_email?: string;
   contact_phone?: string;

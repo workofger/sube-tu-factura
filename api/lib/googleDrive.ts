@@ -161,15 +161,18 @@ export const getOrCreateFolder = async (
 };
 
 /**
- * Build the folder structure: Semana -> Proyecto -> Facturador
+ * Build the folder structure: Semana -> [Extemporaneas] -> Proyecto -> Facturador
  * Returns the final folder ID where files should be uploaded
+ * 
+ * @param isLate - If true, adds an "Extemporaneas" subfolder under the week folder
  */
 export const buildFolderStructure = async (
   week: number,
   year: number,
   project: string,
   issuerRfc: string,
-  issuerName: string
+  issuerName: string,
+  isLate: boolean = false
 ): Promise<{ folderId: string; folderPath: string }> => {
   const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
   
@@ -189,10 +192,22 @@ export const buildFolderStructure = async (
   
   // Create nested structure
   const weekFolderId = await getOrCreateFolder(weekFolder, rootFolderId);
-  const projectFolderId = await getOrCreateFolder(projectFolder, weekFolderId);
+  
+  // If late invoice, add Extemporaneas subfolder
+  let parentForProject = weekFolderId;
+  let pathPrefix = weekFolder;
+  
+  if (isLate) {
+    const lateFolderId = await getOrCreateFolder('Extemporaneas', weekFolderId);
+    parentForProject = lateFolderId;
+    pathPrefix = `${weekFolder}/Extemporaneas`;
+    console.log('📁 Creating folder in Extemporaneas for late invoice');
+  }
+  
+  const projectFolderId = await getOrCreateFolder(projectFolder, parentForProject);
   const issuerFolderId = await getOrCreateFolder(issuerFolder, projectFolderId);
   
-  const folderPath = `${weekFolder}/${projectFolder}/${issuerFolder}`;
+  const folderPath = `${pathPrefix}/${projectFolder}/${issuerFolder}`;
   
   return {
     folderId: issuerFolderId,
@@ -252,6 +267,7 @@ export const uploadFile = async (
 
 /**
  * Upload invoice files (XML and PDF) to the appropriate folder
+ * @param isLate - If true, files are stored in Extemporaneas subfolder
  */
 export const uploadInvoiceFiles = async (
   week: number,
@@ -261,19 +277,21 @@ export const uploadInvoiceFiles = async (
   issuerName: string,
   uuid: string,
   xmlContent?: string | null,
-  pdfContent?: string | null
+  pdfContent?: string | null,
+  isLate: boolean = false
 ): Promise<{
   folderPath: string;
   xmlFile?: { fileId: string; webViewLink: string };
   pdfFile?: { fileId: string; webViewLink: string };
 }> => {
-  // Build folder structure
+  // Build folder structure (with Extemporaneas if late)
   const { folderId, folderPath } = await buildFolderStructure(
     week,
     year,
     project,
     issuerRfc,
-    issuerName
+    issuerName,
+    isLate
   );
   
   const result: {
