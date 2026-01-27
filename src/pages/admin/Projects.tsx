@@ -12,7 +12,6 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
-import { AdminRole } from '../../contexts/AdminAuthContext';
 
 interface Project {
   id: string;
@@ -47,7 +46,8 @@ const initialFormData: ProjectFormData = {
 };
 
 const Projects: React.FC = () => {
-  const { adminUser, hasRole } = useAdminAuth();
+  const { adminUser } = useAdminAuth();
+  const isSuperAdmin = adminUser?.role === 'super_admin';
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +60,8 @@ const Projects: React.FC = () => {
   const [formData, setFormData] = useState<ProjectFormData>(initialFormData);
   const [saving, setSaving] = useState(false);
 
-  const canEdit = hasRole([AdminRole.ADMIN, AdminRole.SUPER_ADMIN]);
-  const canDelete = hasRole([AdminRole.SUPER_ADMIN]);
+  const canEdit = isSuperAdmin || adminUser?.role === 'operations';
+  const canDelete = isSuperAdmin;
 
   // Fetch projects
   const fetchProjects = useCallback(async () => {

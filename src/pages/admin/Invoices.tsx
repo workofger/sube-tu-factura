@@ -177,77 +177,79 @@ const Invoices: React.FC = () => {
 
         {/* Filter Options */}
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-700/50">
-            {/* Week Filter */}
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">Semana</label>
-              <select
-                value={filters.week}
-                onChange={(e) => setFilters(prev => ({ ...prev, week: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              >
-                <option value="">Todas</option>
-                {weekOptions.map(week => (
-                  <option key={week} value={week}>Semana {week}</option>
-                ))}
-              </select>
-            </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-700/50">
+              {/* Week Filter */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Semana</label>
+                <select
+                  value={filters.week}
+                  onChange={(e) => setFilters(prev => ({ ...prev, week: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                >
+                  <option value="">Todas</option>
+                  {weekOptions.map(week => (
+                    <option key={week} value={week}>Semana {week}</option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Payment Program Filter */}
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">Programa de Pago</label>
-              <select
-                value={filters.paymentProgram}
-                onChange={(e) => setFilters(prev => ({ ...prev, paymentProgram: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              >
-                <option value="">Todos</option>
-                <option value="pronto_pago">Pronto Pago</option>
-                <option value="standard">Estándar</option>
-              </select>
-            </div>
+              {/* Payment Program Filter */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Programa de Pago</label>
+                <select
+                  value={filters.paymentProgram}
+                  onChange={(e) => setFilters(prev => ({ ...prev, paymentProgram: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                >
+                  <option value="">Todos</option>
+                  <option value="pronto_pago">Pronto Pago</option>
+                  <option value="standard">Estándar</option>
+                </select>
+              </div>
 
-            {/* Status Filter */}
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">Estado</label>
-              <select
-                value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              >
-                <option value="">Todos</option>
-                <option value="pending_review">Pendiente</option>
-                <option value="approved">Aprobada</option>
-                <option value="rejected">Rechazada</option>
-                <option value="paid">Pagada</option>
-              </select>
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Estado</label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                >
+                  <option value="">Todos</option>
+                  <option value="pending_review">Pendiente</option>
+                  <option value="approved">Aprobada</option>
+                  <option value="rejected">Rechazada</option>
+                  <option value="paid">Pagada</option>
+                </select>
+              </div>
             </div>
-          </div>
-          
-          {/* Quick Filters Row */}
-          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-slate-700/30">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.needsReview}
-                onChange={(e) => setFilters(prev => ({ ...prev, needsReview: e.target.checked }))}
-                className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500"
-              />
-              <AlertCircle className="w-4 h-4 text-amber-400" />
-              <span className="text-slate-300 text-sm">Requiere revisión de proyecto</span>
-            </label>
             
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.isLate}
-                onChange={(e) => setFilters(prev => ({ ...prev, isLate: e.target.checked }))}
-                className="w-4 h-4 rounded border-slate-600 text-orange-500 focus:ring-orange-500"
-              />
-              <AlertTriangle className="w-4 h-4 text-orange-400" />
-              <span className="text-slate-300 text-sm">Extemporáneas</span>
-            </label>
-          </div>
+            {/* Quick Filters Row */}
+            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-slate-700/30">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.needsReview}
+                  onChange={(e) => setFilters(prev => ({ ...prev, needsReview: e.target.checked }))}
+                  className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500"
+                />
+                <AlertCircle className="w-4 h-4 text-amber-400" />
+                <span className="text-slate-300 text-sm">Requiere revisión de proyecto</span>
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.isLate}
+                  onChange={(e) => setFilters(prev => ({ ...prev, isLate: e.target.checked }))}
+                  className="w-4 h-4 rounded border-slate-600 text-orange-500 focus:ring-orange-500"
+                />
+                <AlertTriangle className="w-4 h-4 text-orange-400" />
+                <span className="text-slate-300 text-sm">Extemporáneas</span>
+              </label>
+            </div>
+          </>
         )}
       </div>
 
