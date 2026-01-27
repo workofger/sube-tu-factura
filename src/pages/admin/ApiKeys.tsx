@@ -8,10 +8,7 @@ import {
   XCircle,
   Loader2,
   AlertTriangle,
-  Clock,
-  Shield,
-  Eye,
-  EyeOff
+  Clock
 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { 
@@ -24,8 +21,8 @@ import {
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 
 const ApiKeys: React.FC = () => {
-  const { admin } = useAdminAuth();
-  const isSuperAdmin = admin?.role === 'super_admin';
+  const { adminUser } = useAdminAuth();
+  const isSuperAdmin = adminUser?.role === 'super_admin';
 
   const [isLoading, setIsLoading] = useState(true);
   const [apiKeys, setApiKeys] = useState<ApiKeyInfo[]>([]);

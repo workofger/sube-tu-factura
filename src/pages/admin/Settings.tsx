@@ -21,8 +21,8 @@ interface PaymentSourceAccount {
 }
 
 const Settings: React.FC = () => {
-  const { admin } = useAdminAuth();
-  const isSuperAdmin = admin?.role === 'super_admin';
+  const { adminUser } = useAdminAuth();
+  const isSuperAdmin = adminUser?.role === 'super_admin';
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,7 +44,8 @@ const Settings: React.FC = () => {
       
       if (response.success && response.data) {
         const config = response.data as SystemConfig;
-        setSourceAccount(config.value as PaymentSourceAccount);
+        const value = config.value as unknown as PaymentSourceAccount;
+        setSourceAccount(value);
       }
       setIsLoading(false);
     };
@@ -56,7 +57,7 @@ const Settings: React.FC = () => {
     setIsSaving(true);
     setResult(null);
 
-    const response = await updateSystemConfig('payment_source_account', sourceAccount);
+    const response = await updateSystemConfig('payment_source_account', sourceAccount as unknown as Record<string, unknown>);
     
     setResult({
       success: response.success,
