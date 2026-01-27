@@ -8,22 +8,19 @@ FacturaFlow AI is a web application for processing Mexican CFDI invoices (Compro
 
 ### Frontend (src/)
 - **React 18** + TypeScript
-- **React Router DOM** for routing
 - **Vite** for bundling
 - **Tailwind CSS** for styling
 - **Lucide React** for icons
-- **date-fns** for date formatting
 
 ### Backend (api/)
 - **Vercel Serverless Functions** (Node.js 20)
 - **Supabase** (PostgreSQL) for database
-- **Supabase Auth** for admin authentication
 - **Google Drive API** for file storage
 - **OpenAI GPT-4o** for invoice data extraction (server-side)
 
 ## Project Structure
 
-\`\`\`
+```
 sube-tu-factura/
 ├── api/                    # Vercel Serverless Functions
 │   ├── extract.ts         # POST /api/extract - AI extraction (OpenAI)
@@ -35,37 +32,23 @@ sube-tu-factura/
 │       ├── supabase.ts    # Supabase client + DB operations
 │       ├── googleDrive.ts # Google Drive client + file ops
 │       ├── validators.ts  # Input validation functions
-│       ├── rateLimit.ts   # Rate limiting middleware
 │       └── types.ts       # TypeScript interfaces
 │
 ├── src/                    # React Frontend
 │   ├── components/
-│   │   ├── admin/         # Admin: AdminLayout, ProtectedRoute
 │   │   ├── common/        # Reusable: FileUpload, InputField, SelectField, AlertPopup
 │   │   ├── layout/        # Header, WhatsAppButton
-│   │   └── sections/      # Form sections: Fiscal, Payment, Items, PaymentProgramSelector
-│   ├── contexts/
-│   │   └── AdminAuthContext.tsx  # Admin authentication context
+│   │   └── sections/      # Form sections: Fiscal, Payment, Items
 │   ├── hooks/
 │   │   ├── useInvoiceForm.ts      # Form state management
-│   │   ├── useInvoiceExtraction.ts # AI extraction logic
+│   │   ├── useInvoiceExtraction.ts # AI extraction logic (calls /api/extract)
 │   │   ├── useProjects.ts         # Fetch projects from API
-│   │   ├── useWeekOptions.ts      # Week selector options
-│   │   └── useAdminAuth.ts        # Admin authentication hook
-│   ├── lib/
-│   │   └── supabaseClient.ts      # Supabase client for frontend
-│   ├── pages/
-│   │   ├── Upload.tsx             # Main invoice upload page
-│   │   └── admin/                 # Admin panel pages
-│   │       ├── Login.tsx          # Admin login
-│   │       ├── Dashboard.tsx      # Admin dashboard
-│   │       ├── Invoices.tsx       # Invoice list with filters
-│   │       └── Reports.tsx        # Export CSV/PDF reports
+│   │   └── useWeekOptions.ts      # Week selector options
 │   ├── services/
 │   │   ├── openaiService.ts   # Calls backend /api/extract endpoint
 │   │   └── webhookService.ts  # Backend API communication
 │   ├── types/
-│   │   └── invoice.ts     # Invoice data types + PaymentProgram
+│   │   └── invoice.ts     # Invoice data types
 │   └── utils/
 │       ├── dates.ts       # Date utilities
 │       ├── files.ts       # File handling (Base64, etc)
@@ -76,8 +59,6 @@ sube-tu-factura/
 ├── database/               # SQL migrations
 │   ├── 001_initial_schema.sql
 │   ├── 002_add_flotilleros.sql
-│   ├── 003_add_pronto_pago.sql    # Pronto Pago feature
-│   ├── 004_add_admin_users.sql    # Admin panel users
 │   └── schema.md          # Full DB documentation
 │
 └── docs/api/              # API documentation
@@ -85,64 +66,63 @@ sube-tu-factura/
     ├── SETUP.md
     ├── openapi.yaml
     └── postman.json
-\`\`\`
+```
 
-## Routes
+## Data Model
 
-| Route | Description |
-|-------|-------------|
-| / | Main invoice upload page (public) |
-| /admin/login | Admin login page |
-| /admin/dashboard | Admin dashboard with stats |
-| /admin/invoices | Invoice list with filters |
-| /admin/reports | Export CSV/PDF reports |
+### Key Entities
 
-## Features
+1. **flotilleros** - Invoice issuers (fleet owners or independent drivers)
+   - Can be type 'flotillero' (has multiple drivers) or 'independiente'
+   
+2. **drivers** - Delivery operators
+   - Can belong to a flotillero (flotillero_id) or be independent
+   
+3. **invoices** - CFDI invoice records
+   - biller_id: Who issued the invoice (flotillero)
+   - operated_by_driver_id: Who did the work (optional)
+   
+4. **projects** - Client projects (Mercado Libre, Amazon, etc.)
 
-### Pronto Pago
-Users can choose between:
-- **Standard Payment**: Payment scheduled for next week (100% of total)
-- **Pronto Pago**: Immediate payment (92% of total, 8% financial cost)
-
-Database fields:
-- payment_program: 'standard' | 'pronto_pago'
-- pronto_pago_fee_rate: 0.08 (8%)
-- pronto_pago_fee_amount: calculated fee
-- net_payment_amount: total - fee
-- scheduled_payment_date: calculated date
-
-### Admin Panel
-- Protected routes with Supabase Auth
-- Role-based access (super_admin, finance, operations, viewer)
-- Dashboard with invoice statistics
-- Invoice list with filters and search
-- Export reports to CSV and PDF
+### Relationships
+```
+flotilleros 1:N drivers
+flotilleros 1:N invoices (as biller)
+drivers N:1 invoices
+projects 1:N invoices
+```
 
 ## Environment Variables
 
-### Backend (server-side only - Vercel)
-\`\`\`
-OPENAI_API_KEY=sk-...
+### Backend (server-side only - Vercel Environment Variables)
+```
+OPENAI_API_KEY=sk-...              # OpenAI API key (NEVER expose in frontend)
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 GOOGLE_SERVICE_ACCOUNT_EMAIL=xxx@project.iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
 GOOGLE_DRIVE_ROOT_FOLDER_ID=1AbCd...
 EXPECTED_RECEIVER_RFC=BLI180227F23
-\`\`\`
+```
 
-### Frontend (VITE_ prefix)
-\`\`\`
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
-\`\`\`
+> **IMPORTANT**: No API keys should be exposed in the frontend. All sensitive operations go through backend API endpoints.
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /api/extract | Extract invoice data using OpenAI (server-side) |
+| POST | /api/invoice | Process and save complete invoice |
+| POST | /api/validate | Check if UUID already exists |
+| GET | /api/projects | Get list of active projects |
+| GET | /api/health | Check service health (Supabase, Drive) |
 
 ## Code Conventions
 
 ### TypeScript
-- Use explicit types, avoid \`any\`
-- Interfaces in \`/types/\` or \`/lib/types.ts\`
-- Use \`.js\` extension in API imports (ES modules)
+- Use explicit types, avoid `any`
+- Interfaces in `/types/` or `/lib/types.ts`
+- Use `.js` extension in API imports (ES modules requirement)
 
 ### React Components
 - Functional components with hooks
@@ -153,24 +133,74 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 ### API Functions
 - Export default handler function
 - Always set CORS headers
-- Return consistent format: \`{ success, message, data?, error?, details? }\`
+- Return consistent response format: `{ success, message, data?, error?, details? }`
 
 ### Error Handling
 - Wrap async operations in try/catch
-- Log with emoji prefixes: 📋 (info), ✅ (success), ❌ (error), ⚠️ (warning)
+- Log errors with console.error using emoji prefixes: 📋 (info), ✅ (success), ❌ (error), ⚠️ (warning)
 - Return user-friendly error messages in Spanish
+
+## Google Drive Structure
+
+Files are organized in a 3-level hierarchy:
+```
+📁 Root Folder/
+├── 📁 Semana_01_2026/           # Week folder
+│   ├── 📁 MERCADO_LIBRE/        # Project folder
+│   │   └── 📁 RFC_Name/         # Issuer folder
+│   │       ├── uuid.xml
+│   │       └── uuid.pdf
+```
+
+## Common Tasks
+
+### Adding a new API endpoint
+1. Create `api/endpoint.ts`
+2. Import with `.js` extension
+3. Add CORS headers
+4. Document in `docs/api/openapi.yaml`
+
+### Adding a new form field
+1. Update `types/invoice.ts` with new field
+2. Add to form state in `useInvoiceForm.ts`
+3. Add extraction in backend `api/extract.ts` prompt
+4. Add input in appropriate section component
+
+### Modifying the database
+1. Create new migration in `database/`
+2. Update `database/schema.md`
+3. Update `api/lib/types.ts`
+4. Update `api/lib/supabase.ts` functions
+
+## Important Notes
+
+- **ES Modules**: The project uses ES modules. API imports MUST use `.js` extensions.
+- **Vercel Functions**: Each file in `api/` becomes a serverless function.
+- **No SSR**: This is a client-side React app with API routes.
+- **Spanish UI**: User-facing text should be in Spanish.
+- **Mexican Invoices**: Focus on CFDI 4.0 format specifics.
+- **Security**: OpenAI API calls are made from the backend only. Never expose API keys in frontend code.
+
+## Validations
+
+The system validates:
+1. **Client-side (UX)**: File names match, basic field presence
+2. **Server-side (Security)**: 
+   - RFC format and expected receiver RFC
+   - UUID format and duplicates
+   - Invoice week is within active period (last 3 weeks)
+   - Required fields and data types
 
 ## Known Patterns
 
 ### Preventing Extraction Loops
-The \`useInvoiceExtraction\` hook uses \`extractionAttemptedRef\` to track file pairs that have been processed, preventing infinite loops when validation fails.
+The `useInvoiceExtraction` hook uses a ref (`extractionAttemptedRef`) to track file pairs that have already been processed, preventing infinite loops when validation fails but files remain in state.
 
 ### File Processing Flow
 1. User uploads XML + PDF
 2. Frontend validates filenames match
-3. Frontend extracts UUID from XML
-4. Frontend calls \`/api/validate\` to check for duplicates
-5. Frontend calls \`/api/extract\` for AI extraction
-6. User selects payment program (Standard or Pronto Pago)
-7. User reviews and confirms data
-8. Frontend calls \`/api/invoice\` to save
+3. Frontend extracts UUID from XML (quick check)
+4. Frontend calls `/api/validate` to check for duplicates
+5. Frontend calls `/api/extract` for AI extraction
+6. User reviews and confirms data
+7. Frontend calls `/api/invoice` to save

@@ -101,9 +101,16 @@ export default async function handler(
       pdfFile?: { fileId: string; webViewLink: string };
     } | null = null;
 
-    const hasFiles = payload.files?.xml?.content || payload.files?.pdf?.content;
+    const hasXml = payload.files?.xml?.content;
+    const hasPdf = payload.files?.pdf?.content;
+    console.log('📦 Files received:', { 
+      hasXml: !!hasXml, 
+      xmlSize: hasXml ? hasXml.length : 0,
+      hasPdf: !!hasPdf, 
+      pdfSize: hasPdf ? hasPdf.length : 0 
+    });
     
-    if (hasFiles) {
+    if (hasXml || hasPdf) {
       console.log('📤 Uploading files to Google Drive...');
       const invoiceYear = new Date(payload.invoice.date).getFullYear();
       
@@ -115,13 +122,16 @@ export default async function handler(
           payload.issuer.rfc,
           payload.issuer.name,
           payload.invoice.uuid,
-          payload.files?.xml?.content,
-          payload.files?.pdf?.content
+          hasXml,
+          hasPdf
         );
         console.log('✅ Files uploaded to:', driveResult.folderPath);
+        console.log('   XML result:', driveResult.xmlFile ? `fileId=${driveResult.xmlFile.fileId}` : 'not uploaded');
+        console.log('   PDF result:', driveResult.pdfFile ? `fileId=${driveResult.pdfFile.fileId}` : 'not uploaded');
 
         // Step 8: Save file records to database
         if (driveResult.xmlFile) {
+          console.log('💾 Saving XML file record...');
           await saveFileRecord(
             invoice.id,
             'xml',
@@ -132,6 +142,7 @@ export default async function handler(
         }
 
         if (driveResult.pdfFile) {
+          console.log('💾 Saving PDF file record...');
           await saveFileRecord(
             invoice.id,
             'pdf',
@@ -140,13 +151,18 @@ export default async function handler(
             driveResult.pdfFile.fileId
           );
         }
-        console.log('✅ File records saved');
+        console.log('✅ All file records saved to database');
 
       } catch (driveError) {
         // Log error but don't fail the entire request
-        console.error('⚠️ Google Drive upload failed:', driveError);
+        console.error('⚠️ Google Drive/File save error:', driveError);
+        const err = driveError as Error;
+        console.error('   Message:', err.message);
+        console.error('   Stack:', err.stack);
         // Invoice is already saved, just note the drive failure
       }
+    } else {
+      console.log('⚠️ No file content received in payload');
     }
 
     // Build success response

@@ -329,25 +329,32 @@ export const saveFileRecord = async (
 ): Promise<void> => {
   const client = getSupabaseClient();
   
-  const mimeType = fileType === 'xml' ? 'application/xml' : 'application/pdf';
+  console.log(`📁 Saving file record: ${fileType} for invoice ${invoiceId}`);
+  console.log(`   - fileName: ${fileName}`);
+  console.log(`   - driveId: ${driveId}`);
+  console.log(`   - driveUrl: ${driveUrl}`);
   
-  const { error } = await client
+  // Use only columns that exist in the table
+  const fileData = {
+    invoice_id: invoiceId,
+    file_type: fileType,
+    file_name: fileName,
+    file_path: driveUrl,
+  };
+  
+  const { data, error } = await client
     .from('invoice_files')
-    .upsert({
-      invoice_id: invoiceId,
-      file_type: fileType,
-      file_name: fileName,
-      file_path: driveUrl,
-      google_drive_id: driveId,
-      google_drive_url: driveUrl,
-      mime_type: mimeType
-    }, {
-      onConflict: 'invoice_id,file_type'
-    });
+    .insert(fileData)
+    .select()
+    .single();
   
   if (error) {
+    console.error(`❌ Failed to save file record: ${error.message}`);
+    console.error(`   Error details:`, JSON.stringify(error, null, 2));
     throw new Error(`Failed to save file record: ${error.message}`);
   }
+  
+  console.log(`✅ File record saved with ID: ${data?.id}`);
 };
 
 /**
