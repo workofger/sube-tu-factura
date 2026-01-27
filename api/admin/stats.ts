@@ -79,36 +79,50 @@ export default async function handler(
     const oneWeek = 1000 * 60 * 60 * 24 * 7;
     const currentWeek = Math.ceil(diff / oneWeek);
 
-    // Fetch all invoices for stats
+    // Fetch all invoices for stats (exclude cancelled/rejected)
     const { data: invoices, error: invoicesError } = await supabase
       .from('invoices')
-      .select('id, total_amount, payment_program, pronto_pago_fee_amount, payment_week, payment_year');
+      .select('id, total_amount, net_payment_amount, payment_program, pronto_pago_fee_amount, payment_week, payment_year, status')
+      .not('status', 'in', '("cancelled","rejected")');
 
     if (invoicesError) {
       console.error('❌ Error fetching invoices:', invoicesError);
       throw invoicesError;
     }
 
-    // Calculate stats
+    // Helper to check if invoice is pronto pago
+    const isProntoPago = (inv: { payment_program: string | null }) => 
+      inv.payment_program === 'pronto_pago';
+
+    // Calculate stats with proper null handling
+    const allInvoices = invoices || [];
+    const prontoPagoInvoices = allInvoices.filter(isProntoPago);
+    const standardInvoices = allInvoices.filter(inv => !isProntoPago(inv));
+
     const stats: DashboardStats = {
-      totalInvoices: invoices?.length || 0,
-      totalAmount: invoices?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0,
-      totalProntoPago: invoices?.filter(inv => inv.payment_program === 'pronto_pago').length || 0,
-      totalStandard: invoices?.filter(inv => inv.payment_program !== 'pronto_pago').length || 0,
-      prontoPagoAmount: invoices?.filter(inv => inv.payment_program === 'pronto_pago')
-        .reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0,
-      standardAmount: invoices?.filter(inv => inv.payment_program !== 'pronto_pago')
-        .reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0,
-      prontoPagoFees: invoices?.reduce((sum, inv) => sum + (inv.pronto_pago_fee_amount || 0), 0) || 0,
-      thisWeekInvoices: invoices?.filter(inv => 
+      totalInvoices: allInvoices.length,
+      totalAmount: allInvoices.reduce((sum, inv) => sum + (inv.total_amount ?? 0), 0),
+      totalProntoPago: prontoPagoInvoices.length,
+      totalStandard: standardInvoices.length,
+      prontoPagoAmount: prontoPagoInvoices.reduce((sum, inv) => sum + (inv.total_amount ?? 0), 0),
+      standardAmount: standardInvoices.reduce((sum, inv) => sum + (inv.total_amount ?? 0), 0),
+      prontoPagoFees: allInvoices.reduce((sum, inv) => sum + (inv.pronto_pago_fee_amount ?? 0), 0),
+      thisWeekInvoices: allInvoices.filter(inv => 
         inv.payment_week === currentWeek && inv.payment_year === currentYear
-      ).length || 0,
-      lastWeekInvoices: invoices?.filter(inv => 
+      ).length,
+      lastWeekInvoices: allInvoices.filter(inv => 
         inv.payment_week === currentWeek - 1 && inv.payment_year === currentYear
-      ).length || 0,
+      ).length,
       currentWeek,
       currentYear,
     };
+    
+    console.log('📊 Stats calculated:', {
+      total: stats.totalInvoices,
+      prontoPago: stats.totalProntoPago,
+      standard: stats.totalStandard,
+      thisWeek: stats.thisWeekInvoices,
+    });
 
     // Fetch recent invoices
     const { data: recent, error: recentError } = await supabase

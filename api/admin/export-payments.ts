@@ -88,7 +88,8 @@ export default async function handler(
 
     const weekNum = parseInt(week as string, 10);
     const yearNum = parseInt(year as string, 10);
-    const statusFilter = (status as string)?.split(',') || ['approved', 'pending_payment'];
+    // Include all active statuses by default (pending_review is the initial status)
+    const statusFilter = (status as string)?.split(',') || ['pending_review', 'approved', 'pending_payment'];
 
     const supabase = getSupabaseClient();
 
@@ -110,23 +111,10 @@ export default async function handler(
       account_type: 'clabe',
     };
 
-    // 2. Query invoices grouped by flotillero (biller)
+    // 2. Query invoices for the specified week/year
     let query = supabase
       .from('invoices')
-      .select(`
-        id,
-        total_amount,
-        net_payment_amount,
-        biller_id,
-        flotilleros!biller_id (
-          id,
-          fiscal_name,
-          rfc,
-          email,
-          bank_clabe,
-          bank_institution_id
-        )
-      `)
+      .select('id, total_amount, net_payment_amount, biller_id, issuer_rfc, issuer_name')
       .eq('payment_week', weekNum)
       .eq('payment_year', yearNum)
       .in('status', statusFilter);
@@ -136,6 +124,9 @@ export default async function handler(
     }
 
     const { data: invoices, error: invoicesError } = await query;
+    
+    console.log(`📊 Found ${invoices?.length || 0} invoices for week ${weekNum}/${yearNum}`);
+    console.log(`   Status filter: ${statusFilter.join(', ')}`);
 
     if (invoicesError) {
       console.error('❌ Error fetching invoices:', invoicesError);
@@ -150,37 +141,57 @@ export default async function handler(
       } as ApiResponse);
     }
 
-    // 3. Aggregate by flotillero
+    // 3. Get unique biller IDs and fetch their data
+    const billerIds = [...new Set(invoices.map(inv => inv.biller_id).filter(Boolean))];
+    
+    let flotillerosMap = new Map<string, {
+      id: string;
+      fiscal_name: string;
+      rfc: string;
+      email: string | null;
+      bank_clabe: string | null;
+      bank_institution_id: string | null;
+    }>();
+
+    if (billerIds.length > 0) {
+      const { data: flotilleros } = await supabase
+        .from('flotilleros')
+        .select('id, fiscal_name, rfc, email, bank_clabe, bank_institution_id')
+        .in('id', billerIds);
+      
+      if (flotilleros) {
+        flotilleros.forEach(f => flotillerosMap.set(f.id, f));
+      }
+    }
+
+    // 4. Aggregate by flotillero (or by issuer_rfc if no biller_id)
     const paymentsByFlotillero = new Map<string, PaymentRow>();
 
     for (const invoice of invoices) {
-      const flotillero = invoice.flotilleros as unknown as {
-        id: string;
-        fiscal_name: string;
-        rfc: string;
-        email: string | null;
-        bank_clabe: string | null;
-        bank_institution_id: string | null;
-      };
+      // Use biller_id if available, otherwise use issuer_rfc as key
+      const billerId = invoice.biller_id;
+      const flotillero = billerId ? flotillerosMap.get(billerId) : null;
+      
+      // Create a unique key - either flotillero ID or RFC
+      const key = flotillero?.id || invoice.issuer_rfc;
+      const netAmount = invoice.net_payment_amount ?? invoice.total_amount ?? 0;
+      const totalAmount = invoice.total_amount ?? 0;
 
-      if (!flotillero) continue;
-
-      const existing = paymentsByFlotillero.get(flotillero.id);
-      const netAmount = invoice.net_payment_amount || invoice.total_amount;
+      const existing = paymentsByFlotillero.get(key);
 
       if (existing) {
-        existing.total_amount += invoice.total_amount;
+        existing.total_amount += totalAmount;
         existing.net_amount += netAmount;
         existing.invoice_count += 1;
       } else {
-        paymentsByFlotillero.set(flotillero.id, {
-          flotillero_id: flotillero.id,
-          fiscal_name: flotillero.fiscal_name,
-          rfc: flotillero.rfc,
-          email: flotillero.email,
-          bank_clabe: flotillero.bank_clabe,
-          bank_institution_id: flotillero.bank_institution_id,
-          total_amount: invoice.total_amount,
+        paymentsByFlotillero.set(key, {
+          flotillero_id: flotillero?.id || key,
+          fiscal_name: flotillero?.fiscal_name || invoice.issuer_name || 'Sin nombre',
+          rfc: flotillero?.rfc || invoice.issuer_rfc,
+          email: flotillero?.email || null,
+          bank_clabe: flotillero?.bank_clabe || null,
+          bank_institution_id: flotillero?.bank_institution_id || null,
+          total_amount: totalAmount,
           net_amount: netAmount,
           invoice_count: 1,
         });

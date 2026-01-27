@@ -152,25 +152,32 @@ export default async function handler(
       throw error;
     }
 
-    // Transform data
-    const invoices: InvoiceListItem[] = (data || []).map((inv: Record<string, unknown>) => ({
-      id: inv.id as string,
-      uuid: inv.uuid as string,
-      folio: inv.folio as string | null,
-      issuer_rfc: inv.issuer_rfc as string,
-      issuer_name: inv.issuer_name as string,
-      total_amount: inv.total_amount as number,
-      net_payment_amount: inv.net_payment_amount as number | null,
-      payment_program: (inv.payment_program as string) || 'standard',
-      pronto_pago_fee_amount: inv.pronto_pago_fee_amount as number | null,
-      payment_week: inv.payment_week as number,
-      payment_year: inv.payment_year as number,
-      invoice_date: inv.invoice_date as string,
-      status: inv.status as string,
-      created_at: inv.created_at as string,
-      project_name: (inv.projects as Record<string, unknown>)?.name as string | null,
-      project_code: (inv.projects as Record<string, unknown>)?.code as string | null,
-    }));
+    // Transform data with proper null handling
+    const invoices: InvoiceListItem[] = (data || []).map((inv: Record<string, unknown>) => {
+      const totalAmount = (inv.total_amount as number) ?? 0;
+      const netAmount = (inv.net_payment_amount as number | null) ?? totalAmount;
+      const feeAmount = (inv.pronto_pago_fee_amount as number | null) ?? 0;
+      const projects = inv.projects as Record<string, unknown> | null;
+      
+      return {
+        id: inv.id as string,
+        uuid: inv.uuid as string,
+        folio: (inv.folio as string) || null,
+        issuer_rfc: inv.issuer_rfc as string,
+        issuer_name: inv.issuer_name as string,
+        total_amount: totalAmount,
+        net_payment_amount: netAmount,
+        payment_program: (inv.payment_program as string) || 'standard',
+        pronto_pago_fee_amount: feeAmount,
+        payment_week: (inv.payment_week as number) ?? 0,
+        payment_year: (inv.payment_year as number) ?? new Date().getFullYear(),
+        invoice_date: inv.invoice_date as string,
+        status: (inv.status as string) || 'pending_review',
+        created_at: inv.created_at as string,
+        project_name: projects?.name as string | null ?? null,
+        project_code: projects?.code as string | null ?? null,
+      };
+    });
 
     const total = count || 0;
     const totalPages = Math.ceil(total / pageSizeNum);
