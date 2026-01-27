@@ -3,13 +3,18 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Contexts
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
+import { UserAuthProvider } from './contexts/UserAuthContext';
 
-// Pages
+// Admin Pages
 import UploadPage from './pages/Upload';
-import { Login, Dashboard, Invoices, Reports, Settings, ApiKeys } from './pages/admin';
+import { Login, Dashboard, Invoices, Reports, Settings, ApiKeys, Users } from './pages/admin';
+
+// User Portal Pages
+import { UserLogin, UserDashboard, UserInvoices, UserProfile, Onboarding } from './pages/user';
 
 // Components
 import { ProtectedRoute } from './components/admin';
+import UserProtectedRoute from './components/user/UserProtectedRoute';
 
 const App: React.FC = () => {
   return (
@@ -50,6 +55,14 @@ const App: React.FC = () => {
                   }
                 />
                 <Route
+                  path="users"
+                  element={
+                    <ProtectedRoute>
+                      <Users />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="settings"
                   element={
                     <ProtectedRoute>
@@ -69,6 +82,52 @@ const App: React.FC = () => {
                 <Route path="" element={<Navigate to="/admin/login" replace />} />
               </Routes>
             </AdminAuthProvider>
+          }
+        />
+
+        {/* User Portal Routes - wrapped in UserAuthProvider */}
+        <Route
+          path="/portal/*"
+          element={
+            <UserAuthProvider>
+              <Routes>
+                <Route path="login" element={<UserLogin />} />
+                <Route
+                  path="onboarding"
+                  element={
+                    <UserProtectedRoute>
+                      <Onboarding />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="dashboard"
+                  element={
+                    <UserProtectedRoute requiresOnboarding>
+                      <UserDashboard />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="invoices"
+                  element={
+                    <UserProtectedRoute requiresOnboarding>
+                      <UserInvoices />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="profile"
+                  element={
+                    <UserProtectedRoute requiresOnboarding>
+                      <UserProfile />
+                    </UserProtectedRoute>
+                  }
+                />
+                {/* Redirect /portal to /portal/login */}
+                <Route path="" element={<Navigate to="/portal/login" replace />} />
+              </Routes>
+            </UserAuthProvider>
           }
         />
 
