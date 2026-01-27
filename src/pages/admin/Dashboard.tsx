@@ -189,14 +189,19 @@ const Dashboard: React.FC = () => {
                   <Zap className="w-4 h-4 text-amber-400" />
                   <span className="text-slate-300">Pronto Pago</span>
                 </div>
-                <span className="text-white font-semibold">{stats?.totalProntoPago || 0}</span>
+                <div className="text-right">
+                  <span className="text-white font-semibold">{stats?.totalProntoPago || 0}</span>
+                  <span className="text-slate-500 text-sm ml-2">
+                    ({formatCurrency(stats?.prontoPagoAmount || 0)})
+                  </span>
+                </div>
               </div>
               <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500"
                   style={{ 
                     width: `${stats && stats.totalInvoices > 0 
-                      ? (stats.totalProntoPago / stats.totalInvoices) * 100 
+                      ? ((stats.totalProntoPago || 0) / stats.totalInvoices) * 100 
                       : 0}%` 
                   }}
                 />
@@ -210,14 +215,19 @@ const Dashboard: React.FC = () => {
                   <Clock className="w-4 h-4 text-blue-400" />
                   <span className="text-slate-300">Estándar</span>
                 </div>
-                <span className="text-white font-semibold">{stats?.totalStandard || 0}</span>
+                <div className="text-right">
+                  <span className="text-white font-semibold">{stats?.totalStandard || 0}</span>
+                  <span className="text-slate-500 text-sm ml-2">
+                    ({formatCurrency(stats?.standardAmount || 0)})
+                  </span>
+                </div>
               </div>
               <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-500"
                   style={{ 
                     width: `${stats && stats.totalInvoices > 0 
-                      ? (stats.totalStandard / stats.totalInvoices) * 100 
+                      ? ((stats.totalStandard || 0) / stats.totalInvoices) * 100 
                       : 0}%` 
                   }}
                 />
@@ -226,9 +236,21 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Summary */}
-          <div className="mt-6 pt-6 border-t border-slate-700/50">
+          <div className="mt-6 pt-6 border-t border-slate-700/50 space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">Ingresos por Pronto Pago</span>
+              <span className="text-slate-400">Total facturas</span>
+              <span className="text-white font-semibold">
+                {(stats?.totalProntoPago || 0) + (stats?.totalStandard || 0)} / {stats?.totalInvoices || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Suma de montos</span>
+              <span className="text-white font-semibold">
+                {formatCurrency((stats?.prontoPagoAmount || 0) + (stats?.standardAmount || 0))}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Ingresos por Pronto Pago (fees)</span>
               <span className="text-emerald-400 font-semibold">
                 {formatCurrency(stats?.prontoPagoFees || 0)}
               </span>

@@ -90,38 +90,77 @@ export default async function handler(
       throw invoicesError;
     }
 
-    // Helper to check if invoice is pronto pago
-    const isProntoPago = (inv: { payment_program: string | null }) => 
-      inv.payment_program === 'pronto_pago';
-
     // Calculate stats with proper null handling
     const allInvoices = invoices || [];
-    const prontoPagoInvoices = allInvoices.filter(isProntoPago);
-    const standardInvoices = allInvoices.filter(inv => !isProntoPago(inv));
+    
+    // Separate invoices by payment program
+    const prontoPagoInvoices: typeof allInvoices = [];
+    const standardInvoices: typeof allInvoices = [];
+    
+    for (const inv of allInvoices) {
+      if (inv.payment_program === 'pronto_pago') {
+        prontoPagoInvoices.push(inv);
+      } else {
+        // null, undefined, 'standard', or any other value = standard
+        standardInvoices.push(inv);
+      }
+    }
+
+    // Calculate amounts
+    let totalAmount = 0;
+    let prontoPagoAmount = 0;
+    let standardAmount = 0;
+    let prontoPagoFees = 0;
+
+    for (const inv of prontoPagoInvoices) {
+      const amount = inv.total_amount ?? 0;
+      const fee = inv.pronto_pago_fee_amount ?? 0;
+      prontoPagoAmount += amount;
+      prontoPagoFees += fee;
+      totalAmount += amount;
+    }
+
+    for (const inv of standardInvoices) {
+      const amount = inv.total_amount ?? 0;
+      standardAmount += amount;
+      totalAmount += amount;
+    }
+
+    // Count this week and last week
+    const thisWeekInvoices = allInvoices.filter(inv => 
+      inv.payment_week === currentWeek && inv.payment_year === currentYear
+    ).length;
+    
+    const lastWeekInvoices = allInvoices.filter(inv => 
+      inv.payment_week === currentWeek - 1 && inv.payment_year === currentYear
+    ).length;
 
     const stats: DashboardStats = {
       totalInvoices: allInvoices.length,
-      totalAmount: allInvoices.reduce((sum, inv) => sum + (inv.total_amount ?? 0), 0),
+      totalAmount: Math.round(totalAmount * 100) / 100,
       totalProntoPago: prontoPagoInvoices.length,
       totalStandard: standardInvoices.length,
-      prontoPagoAmount: prontoPagoInvoices.reduce((sum, inv) => sum + (inv.total_amount ?? 0), 0),
-      standardAmount: standardInvoices.reduce((sum, inv) => sum + (inv.total_amount ?? 0), 0),
-      prontoPagoFees: allInvoices.reduce((sum, inv) => sum + (inv.pronto_pago_fee_amount ?? 0), 0),
-      thisWeekInvoices: allInvoices.filter(inv => 
-        inv.payment_week === currentWeek && inv.payment_year === currentYear
-      ).length,
-      lastWeekInvoices: allInvoices.filter(inv => 
-        inv.payment_week === currentWeek - 1 && inv.payment_year === currentYear
-      ).length,
+      prontoPagoAmount: Math.round(prontoPagoAmount * 100) / 100,
+      standardAmount: Math.round(standardAmount * 100) / 100,
+      prontoPagoFees: Math.round(prontoPagoFees * 100) / 100,
+      thisWeekInvoices,
+      lastWeekInvoices,
       currentWeek,
       currentYear,
     };
+    
+    // Debug: verify the sums add up
+    const sumCheck = prontoPagoInvoices.length + standardInvoices.length;
+    const amountCheck = Math.round((prontoPagoAmount + standardAmount) * 100) / 100;
     
     console.log('📊 Stats calculated:', {
       total: stats.totalInvoices,
       prontoPago: stats.totalProntoPago,
       standard: stats.totalStandard,
-      thisWeek: stats.thisWeekInvoices,
+      sumCheck: `${sumCheck} === ${stats.totalInvoices}`,
+      prontoPagoAmount: stats.prontoPagoAmount,
+      standardAmount: stats.standardAmount,
+      amountCheck: `${amountCheck} === ${stats.totalAmount}`,
     });
 
     // Fetch recent invoices
