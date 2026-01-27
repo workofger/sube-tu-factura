@@ -161,6 +161,17 @@ export interface DbFlotillero {
   status: string;
   is_verified: boolean;
   notes?: string;
+  // Auth fields
+  password_hash?: string;
+  temp_password_hash?: string;
+  requires_password_change?: boolean;
+  magic_link_token?: string;
+  magic_link_expires_at?: string;
+  invite_sent_at?: string;
+  invite_method?: 'temp_password' | 'magic_link';
+  onboarding_completed?: boolean;
+  onboarding_completed_at?: string;
+  // Timestamps
   created_at: string;
   updated_at: string;
 }

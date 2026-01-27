@@ -557,7 +557,7 @@ function generateTempPassword(): string {
 async function handleSendInvite(
   supabase: ReturnType<typeof getSupabaseClient>,
   userId: string,
-  adminId: string,
+  _adminId: string,
   res: VercelResponse
 ) {
   // Generate new magic link
@@ -598,7 +598,7 @@ async function handleSendInvite(
 async function handleResetPassword(
   supabase: ReturnType<typeof getSupabaseClient>,
   userId: string,
-  adminId: string,
+  _adminId: string,
   res: VercelResponse
 ) {
   // Generate new temp password
