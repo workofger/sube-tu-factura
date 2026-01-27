@@ -193,9 +193,10 @@ export const insertInvoice = async (
     flotilleroId = flotillero.id;
   }
   
-  const invoiceData = {
+  // Base invoice data (core fields that always exist)
+  const invoiceData: Record<string, unknown> = {
     driver_id: driverId,
-    biller_id: flotilleroId, // New: who issues the invoice
+    biller_id: flotilleroId,
     project_id: projectId,
     uuid: payload.invoice.uuid,
     folio: payload.invoice.folio || null,
@@ -226,28 +227,43 @@ export const insertInvoice = async (
     exchange_rate: payload.financial.exchangeRate || 1,
     payment_week: payload.week || null,
     payment_year: invoiceYear,
-    // Pronto Pago fields
-    payment_program: payload.paymentProgram?.program || 'standard',
-    pronto_pago_fee_rate: payload.paymentProgram?.feeRate || 0,
-    pronto_pago_fee_amount: payload.paymentProgram?.feeAmount || 0,
-    net_payment_amount: payload.paymentProgram?.netAmount || payload.financial.totalAmount,
-    // Contact and status
     contact_email: payload.contact.email || null,
     contact_phone: payload.contact.phone || null,
     status: 'pending_review'
   };
   
-  const { data, error } = await client
+  // Try inserting with Pronto Pago fields first
+  const prontoPagoFields = {
+    payment_program: payload.paymentProgram?.program || 'standard',
+    pronto_pago_fee_rate: payload.paymentProgram?.feeRate || 0,
+    pronto_pago_fee_amount: payload.paymentProgram?.feeAmount || 0,
+    net_payment_amount: payload.paymentProgram?.netAmount || payload.financial.totalAmount,
+  };
+  
+  // First attempt: with Pronto Pago fields
+  let result = await client
     .from('invoices')
-    .insert(invoiceData)
+    .insert({ ...invoiceData, ...prontoPagoFields })
     .select()
     .single();
   
-  if (error) {
-    throw new Error(`Failed to insert invoice: ${error.message}`);
+  // If error contains "column" reference, retry without Pronto Pago fields
+  if (result.error && result.error.message.includes('column')) {
+    console.warn('⚠️ Pronto Pago columns not found, inserting without them');
+    console.warn('   Run migration 003_add_pronto_pago.sql to enable this feature');
+    
+    result = await client
+      .from('invoices')
+      .insert(invoiceData)
+      .select()
+      .single();
   }
   
-  return data as DbInvoice;
+  if (result.error) {
+    throw new Error(`Failed to insert invoice: ${result.error.message}`);
+  }
+  
+  return result.data as DbInvoice;
 };
 
 /**
