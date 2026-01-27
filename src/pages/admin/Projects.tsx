@@ -12,6 +12,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
+import AdminLayout from '../../components/admin/AdminLayout';
 
 interface Project {
   id: string;
@@ -225,8 +226,9 @@ const Projects: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
+    <AdminLayout>
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <FolderKanban className="w-8 h-8 text-emerald-500" />
@@ -401,123 +403,124 @@ const Projects: React.FC = () => {
         )}
       </div>
 
-      {/* Create/Edit Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-          
-          {/* Modal */}
-          <div className="relative w-full max-w-lg bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-700">
-              <h2 className="text-xl font-bold text-white">
-                {editingProject ? 'Editar Proyecto' : 'Nuevo Proyecto'}
-              </h2>
-              <button onClick={closeModal} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Create/Edit Modal */}
+        {modalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+            
+            {/* Modal */}
+            <div className="relative w-full max-w-lg bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-slate-700">
+                <h2 className="text-xl font-bold text-white">
+                  {editingProject ? 'Editar Proyecto' : 'Nuevo Proyecto'}
+                </h2>
+                <button onClick={closeModal} className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            {/* Form */}
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Form */}
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Código *</label>
+                    <input
+                      type="text"
+                      value={formData.code}
+                      onChange={e => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                      placeholder="MERCADO_LIBRE"
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Color</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={formData.color}
+                        onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                        className="w-12 h-10 rounded cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={formData.color}
+                        onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                        className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Código *</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Nombre *</label>
                   <input
                     type="text"
-                    value={formData.code}
-                    onChange={e => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                    placeholder="MERCADO_LIBRE"
+                    value={formData.name}
+                    onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Mercado Libre"
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Color</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={formData.color}
-                      onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                      className="w-12 h-10 rounded cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={formData.color}
-                      onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                      className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                  </div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Descripción</label>
+                  <input
+                    type="text"
+                    value={formData.description}
+                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Entregas de Mercado Libre y Mercado Envíos"
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Keywords (separadas por coma)</label>
+                  <input
+                    type="text"
+                    value={formData.keywords}
+                    onChange={e => setFormData(prev => ({ ...prev, keywords: e.target.value }))}
+                    placeholder="mercado libre, meli, ml, mercado envios"
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Palabras clave para matching automático con conceptos de facturas</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Descripción para IA</label>
+                  <textarea
+                    value={formData.ai_description}
+                    onChange={e => setFormData(prev => ({ ...prev, ai_description: e.target.value }))}
+                    placeholder="Descripción extendida para ayudar a la IA a identificar facturas de este proyecto..."
+                    rows={3}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Nombre *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Mercado Libre"
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+              {/* Footer */}
+              <div className="flex justify-end gap-3 p-6 border-t border-slate-700">
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white rounded-lg transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </button>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Descripción</label>
-                <input
-                  type="text"
-                  value={formData.description}
-                  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Entregas de Mercado Libre y Mercado Envíos"
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Keywords (separadas por coma)</label>
-                <input
-                  type="text"
-                  value={formData.keywords}
-                  onChange={e => setFormData(prev => ({ ...prev, keywords: e.target.value }))}
-                  placeholder="mercado libre, meli, ml, mercado envios"
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-                <p className="text-xs text-slate-500 mt-1">Palabras clave para matching automático con conceptos de facturas</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Descripción para IA</label>
-                <textarea
-                  value={formData.ai_description}
-                  onChange={e => setFormData(prev => ({ ...prev, ai_description: e.target.value }))}
-                  placeholder="Descripción extendida para ayudar a la IA a identificar facturas de este proyecto..."
-                  rows={3}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex justify-end gap-3 p-6 border-t border-slate-700">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white rounded-lg transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </AdminLayout>
   );
 };
 
