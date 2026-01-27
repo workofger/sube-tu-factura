@@ -340,7 +340,7 @@ const UploadPage: React.FC = () => {
                 <button 
                   type="button" 
                   className="text-gray-500 hover:text-gray-800 font-medium text-sm flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg transition-colors"
-                  onClick={() => window.open('https://wa.me/525512345678?text=Necesito ayuda con mi factura', '_blank')}
+                  onClick={() => window.open('https://wa.me/5215644443529?text=Necesito ayuda con mi factura', '_blank')}
                 >
                   <ShieldCheck size={16} /> ¿Necesitas ayuda?
                 </button>
