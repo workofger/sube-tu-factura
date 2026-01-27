@@ -33,6 +33,10 @@ export interface DashboardStats {
   lastWeekInvoices: number;
   currentWeek: number;
   currentYear: number;
+  // Late invoice stats
+  totalLate: number;
+  lateAmount: number;
+  needsProjectReview: number;
 }
 
 export interface RecentInvoice {
@@ -43,6 +47,9 @@ export interface RecentInvoice {
   payment_program: string;
   created_at: string;
   status: string;
+  is_late: boolean;
+  late_reason: string | null;
+  needs_project_review: boolean;
 }
 
 export interface InvoiceListItem {

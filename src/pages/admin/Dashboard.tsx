@@ -8,7 +8,9 @@ import {
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -176,6 +178,55 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Alerts Row */}
+      {((stats?.totalLate || 0) > 0 || (stats?.needsProjectReview || 0) > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {/* Late Invoices Alert */}
+          {(stats?.totalLate || 0) > 0 && (
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-2xl p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-orange-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-orange-300 font-semibold">Facturas Extemporáneas</p>
+                  <p className="text-orange-400/70 text-sm">
+                    {stats?.totalLate} facturas fuera de tiempo
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-orange-400">{stats?.totalLate}</p>
+                  <p className="text-orange-400/70 text-xs">
+                    {formatCurrency(stats?.lateAmount || 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Needs Review Alert */}
+          {(stats?.needsProjectReview || 0) > 0 && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-amber-300 font-semibold">Requieren Revisión</p>
+                  <p className="text-amber-400/70 text-sm">
+                    Proyecto no identificado automáticamente
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-amber-400">{stats?.needsProjectReview}</p>
+                  <p className="text-amber-400/70 text-xs">facturas pendientes</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Distribution Card */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Payment Program Distribution */}
@@ -268,23 +319,39 @@ const Dashboard: React.FC = () => {
               recentInvoices.map((invoice) => (
                 <div 
                   key={invoice.id}
-                  className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl"
+                  className={`flex items-center justify-between p-3 rounded-xl ${
+                    invoice.is_late 
+                      ? 'bg-orange-500/10 border border-orange-500/20' 
+                      : 'bg-slate-900/50'
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      invoice.payment_program === 'pronto_pago' 
-                        ? 'bg-amber-500/20' 
-                        : 'bg-blue-500/20'
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center relative ${
+                      invoice.is_late
+                        ? 'bg-orange-500/20'
+                        : invoice.payment_program === 'pronto_pago' 
+                          ? 'bg-amber-500/20' 
+                          : 'bg-blue-500/20'
                     }`}>
-                      {invoice.payment_program === 'pronto_pago' 
-                        ? <Zap className="w-5 h-5 text-amber-400" />
-                        : <Clock className="w-5 h-5 text-blue-400" />
-                      }
+                      {invoice.is_late ? (
+                        <AlertTriangle className="w-5 h-5 text-orange-400" />
+                      ) : invoice.payment_program === 'pronto_pago' ? (
+                        <Zap className="w-5 h-5 text-amber-400" />
+                      ) : (
+                        <Clock className="w-5 h-5 text-blue-400" />
+                      )}
                     </div>
                     <div>
-                      <p className="text-white font-medium text-sm truncate max-w-[150px]">
-                        {invoice.issuer_name}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-white font-medium text-sm truncate max-w-[120px]">
+                          {invoice.issuer_name}
+                        </p>
+                        {invoice.is_late && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded-full border border-orange-500/30">
+                            EXTEMP.
+                          </span>
+                        )}
+                      </div>
                       <p className="text-slate-500 text-xs">
                         {format(new Date(invoice.created_at), 'dd MMM, HH:mm', { locale: es })}
                       </p>

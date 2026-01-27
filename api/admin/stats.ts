@@ -15,6 +15,10 @@ interface DashboardStats {
   lastWeekInvoices: number;
   currentWeek: number;
   currentYear: number;
+  // Late invoice stats
+  totalLate: number;
+  lateAmount: number;
+  needsProjectReview: number;
 }
 
 interface RecentInvoice {
@@ -25,6 +29,9 @@ interface RecentInvoice {
   payment_program: string;
   created_at: string;
   status: string;
+  is_late: boolean;
+  late_reason: string | null;
+  needs_project_review: boolean;
 }
 
 interface StatsResponse {
@@ -82,7 +89,7 @@ export default async function handler(
     // Fetch all invoices for stats (exclude cancelled/rejected)
     const { data: invoices, error: invoicesError } = await supabase
       .from('invoices')
-      .select('id, total_amount, net_payment_amount, payment_program, pronto_pago_fee_amount, payment_week, payment_year, status')
+      .select('id, total_amount, net_payment_amount, payment_program, pronto_pago_fee_amount, payment_week, payment_year, status, is_late, late_reason, needs_project_review')
       .not('status', 'in', '("cancelled","rejected")');
 
     if (invoicesError) {
@@ -135,6 +142,13 @@ export default async function handler(
       inv.payment_week === currentWeek - 1 && inv.payment_year === currentYear
     ).length;
 
+    // Count late invoices and amount
+    const lateInvoices = allInvoices.filter(inv => inv.is_late === true);
+    const lateAmount = lateInvoices.reduce((sum, inv) => sum + (inv.total_amount ?? 0), 0);
+    
+    // Count invoices needing project review
+    const needsProjectReview = allInvoices.filter(inv => inv.needs_project_review === true).length;
+
     const stats: DashboardStats = {
       totalInvoices: allInvoices.length,
       totalAmount: Math.round(totalAmount * 100) / 100,
@@ -147,6 +161,10 @@ export default async function handler(
       lastWeekInvoices,
       currentWeek,
       currentYear,
+      // Late invoice stats
+      totalLate: lateInvoices.length,
+      lateAmount: Math.round(lateAmount * 100) / 100,
+      needsProjectReview,
     };
     
     // Debug: verify the sums add up
@@ -166,7 +184,7 @@ export default async function handler(
     // Fetch recent invoices
     const { data: recent, error: recentError } = await supabase
       .from('invoices')
-      .select('id, uuid, issuer_name, total_amount, payment_program, created_at, status')
+      .select('id, uuid, issuer_name, total_amount, payment_program, created_at, status, is_late, late_reason, needs_project_review')
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -183,6 +201,9 @@ export default async function handler(
       payment_program: inv.payment_program || 'standard',
       created_at: inv.created_at,
       status: inv.status,
+      is_late: inv.is_late || false,
+      late_reason: inv.late_reason || null,
+      needs_project_review: inv.needs_project_review || false,
     }));
 
     return res.status(200).json({

@@ -294,14 +294,24 @@ const Invoices: React.FC = () => {
                   {invoices.map((invoice) => (
                     <tr 
                       key={invoice.id} 
-                      className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors"
+                      className={`border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors ${
+                        invoice.is_late ? 'bg-orange-500/5' : ''
+                      }`}
                     >
                       <td className="px-6 py-4">
-                        <div>
-                          <p className="text-white font-medium truncate max-w-[200px]">
-                            {invoice.issuer_name}
-                          </p>
-                          <p className="text-slate-500 text-sm">{invoice.issuer_rfc}</p>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <p className="text-white font-medium truncate max-w-[180px]">
+                              {invoice.issuer_name}
+                            </p>
+                            <p className="text-slate-500 text-sm">{invoice.issuer_rfc}</p>
+                          </div>
+                          {invoice.is_late && (
+                            <span className="flex-shrink-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded-full border border-orange-500/30">
+                              <AlertTriangle className="w-3 h-3" />
+                              EXTEMP.
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -313,9 +323,16 @@ const Invoices: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-slate-300">
-                          {invoice.project_name || '-'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-300">
+                            {invoice.project_name || '-'}
+                          </span>
+                          {invoice.needs_project_review && (
+                            <span title="Requiere revisión de proyecto">
+                              <AlertCircle className="w-4 h-4 text-amber-400" />
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -362,17 +379,31 @@ const Invoices: React.FC = () => {
             {/* Mobile Cards */}
             <div className="lg:hidden divide-y divide-slate-700/30">
               {invoices.map((invoice) => (
-                <div key={invoice.id} className="p-4" onClick={() => setSelectedInvoice(invoice)}>
+                <div 
+                  key={invoice.id} 
+                  className={`p-4 ${invoice.is_late ? 'bg-orange-500/5' : ''}`} 
+                  onClick={() => setSelectedInvoice(invoice)}
+                >
                   <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-white font-medium">{invoice.issuer_name}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-white font-medium">{invoice.issuer_name}</p>
+                        {invoice.is_late && (
+                          <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded-full border border-orange-500/30">
+                            <AlertTriangle className="w-3 h-3" />
+                            EXTEMP.
+                          </span>
+                        )}
+                      </div>
                       <p className="text-slate-500 text-sm">{invoice.issuer_rfc}</p>
                     </div>
                     {getStatusBadge(invoice.status)}
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {invoice.payment_program === 'pronto_pago' ? (
+                      {invoice.is_late ? (
+                        <AlertTriangle className="w-4 h-4 text-orange-400" />
+                      ) : invoice.payment_program === 'pronto_pago' ? (
                         <Zap className="w-4 h-4 text-amber-400" />
                       ) : (
                         <Clock className="w-4 h-4 text-blue-400" />
@@ -380,6 +411,9 @@ const Invoices: React.FC = () => {
                       <span className="text-slate-400 text-sm">
                         S{invoice.payment_week}
                       </span>
+                      {invoice.needs_project_review && (
+                        <AlertCircle className="w-4 h-4 text-amber-400" />
+                      )}
                     </div>
                     <p className="text-white font-semibold">
                       {formatCurrency(invoice.total_amount)}
@@ -490,6 +524,38 @@ const Invoices: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* Late Invoice Alert */}
+              {selectedInvoice.is_late && (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-orange-500/10 border border-orange-500/30">
+                  <AlertTriangle className="w-6 h-6 text-orange-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-orange-300 font-semibold">Factura Extemporánea</p>
+                    <p className="text-orange-400/70 text-sm">
+                      {selectedInvoice.late_reason === 'after_deadline' 
+                        ? 'Subida después del plazo límite (Jueves 10 AM)'
+                        : selectedInvoice.late_reason === 'wrong_invoice_date'
+                        ? 'Fecha de factura fuera del período válido'
+                        : selectedInvoice.late_reason === 'wrong_week_in_description'
+                        ? 'Semana en descripción no coincide'
+                        : 'Factura fuera de tiempo'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Needs Review Alert */}
+              {selectedInvoice.needs_project_review && (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <AlertCircle className="w-6 h-6 text-amber-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-amber-300 font-semibold">Requiere Revisión</p>
+                    <p className="text-amber-400/70 text-sm">
+                      Proyecto no identificado automáticamente - revisar manualmente
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Payment Program Badge */}
               <div className={`flex items-center gap-3 p-4 rounded-xl ${
