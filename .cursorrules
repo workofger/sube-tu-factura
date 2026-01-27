@@ -20,187 +20,117 @@ FacturaFlow AI is a web application for processing Mexican CFDI invoices (Compro
 
 ## Project Structure
 
-```
+\`\`\`
 sube-tu-factura/
 ├── api/                    # Vercel Serverless Functions
-│   ├── extract.ts         # POST /api/extract - AI extraction (OpenAI)
+│   ├── extract.ts         # POST /api/extract - AI extraction (OpenAI + project matching)
 │   ├── health.ts          # GET /api/health - Service health check
-│   ├── invoice.ts         # POST /api/invoice - Process invoice
+│   ├── invoice.ts         # POST /api/invoice - Process invoice (with late invoice support)
 │   ├── projects.ts        # GET /api/projects - Get projects list
 │   ├── validate.ts        # POST /api/validate - Check UUID exists
+│   ├── admin/
+│   │   ├── login.ts       # POST /api/admin/login
+│   │   ├── invoices.ts    # GET /api/admin/invoices (with needsReview filter)
+│   │   ├── projects.ts    # CRUD /api/admin/projects
+│   │   ├── api-keys.ts    # API key management
+│   │   └── ...
+│   ├── user/              # User auth endpoints
 │   └── lib/
 │       ├── supabase.ts    # Supabase client + DB operations
-│       ├── googleDrive.ts # Google Drive client + file ops
+│       ├── googleDrive.ts # Google Drive (with Extemporaneas folder)
+│       ├── storage.ts     # Supabase Storage
 │       ├── validators.ts  # Input validation functions
 │       └── types.ts       # TypeScript interfaces
 │
 ├── src/                    # React Frontend
 │   ├── components/
-│   │   ├── common/        # Reusable: FileUpload, InputField, SelectField, AlertPopup
+│   │   ├── common/        # FileUpload, InputField, AlertPopup, LateInvoiceModal
 │   │   ├── layout/        # Header, WhatsAppButton
-│   │   └── sections/      # Form sections: Fiscal, Payment, Items
+│   │   ├── sections/      # Form sections: Fiscal, Payment, Items
+│   │   └── admin/         # AdminLayout, ProtectedRoute
 │   ├── hooks/
-│   │   ├── useInvoiceForm.ts      # Form state management
-│   │   ├── useInvoiceExtraction.ts # AI extraction logic (calls /api/extract)
-│   │   ├── useProjects.ts         # Fetch projects from API
-│   │   └── useWeekOptions.ts      # Week selector options
+│   │   ├── useInvoiceForm.ts      # Form state + late invoice handling
+│   │   ├── useInvoiceExtraction.ts # AI extraction logic
+│   │   └── useAdminAuth.ts        # Admin authentication
 │   ├── services/
 │   │   ├── openaiService.ts   # Calls backend /api/extract endpoint
-│   │   └── webhookService.ts  # Backend API communication
+│   │   ├── webhookService.ts  # Backend API communication
+│   │   └── adminService.ts    # Admin API service
+│   ├── pages/
+│   │   ├── Upload.tsx     # Main upload page (auto week calculation)
+│   │   └── admin/         # Admin panel pages (incl. Projects.tsx)
 │   ├── types/
-│   │   └── invoice.ts     # Invoice data types
+│   │   └── invoice.ts     # Invoice data types (with late invoice fields)
 │   └── utils/
-│       ├── dates.ts       # Date utilities
-│       ├── files.ts       # File handling (Base64, etc)
-│       ├── formatters.ts  # Number/string formatters
-│       ├── weekValidation.ts # Week validation logic
+│       ├── dates.ts       # Date utilities (Mexico timezone, deadline logic)
 │       └── xmlParser.ts   # XML parsing utilities
 │
 ├── database/               # SQL migrations
 │   ├── 001_initial_schema.sql
-│   ├── 002_add_flotilleros.sql
-│   └── schema.md          # Full DB documentation
+│   ├── ...
+│   ├── 011_add_late_invoice_fields.sql  # Late invoice + project keywords
+│   └── schema.md
 │
-└── docs/api/              # API documentation
-    ├── README.md
-    ├── SETUP.md
-    ├── openapi.yaml
-    └── postman.json
-```
+└── docs/api/
+    └── README.md
+\`\`\`
 
-## Data Model
+## Business Logic
 
-### Key Entities
+### Invoice Deadline (Fecha límite)
+- **Deadline**: Jueves 10:00 AM hora Ciudad de México (America/Mexico_City)
+- **Valid invoices**: Invoice date must be Mon-Sun of the previous week
+- **Late invoices (Extemporáneas)**:
+  - Uploaded after Thursday 10am → \`late_reason: 'after_deadline'\`
+  - Invoice date outside valid range → \`late_reason: 'wrong_week'\`
+- **Late invoice handling**:
+  - Show confirmation popup (LateInvoiceModal)
+  - Store in "Extemporaneas" folder in Drive
+  - Schedule for next payment cycle
 
-1. **flotilleros** - Invoice issuers (fleet owners or independent drivers)
-   - Can be type 'flotillero' (has multiple drivers) or 'independiente'
-   
-2. **drivers** - Delivery operators
-   - Can belong to a flotillero (flotillero_id) or be independent
-   
-3. **invoices** - CFDI invoice records
-   - biller_id: Who issued the invoice (flotillero)
-   - operated_by_driver_id: Who did the work (optional)
-   
-4. **projects** - Client projects (Mercado Libre, Amazon, etc.)
+### Project Matching (AI)
+- OpenAI analyzes invoice concepts and issuer name
+- Uses project keywords and ai_description for context
+- Returns \`project\` and \`projectConfidence\` (0.0-1.0)
+- If confidence < 0.7 or project = "OTRO": \`needs_project_review = true\`
 
-### Relationships
-```
-flotilleros 1:N drivers
-flotilleros 1:N invoices (as biller)
-drivers N:1 invoices
-projects 1:N invoices
-```
+### Payment Programs
+- **Standard**: Payment Friday of next week
+- **Pronto Pago**: Payment same week, 8% fee deducted
 
-## Environment Variables
+## Google Drive Structure
 
-### Backend (server-side only - Vercel Environment Variables)
-```
-OPENAI_API_KEY=sk-...              # OpenAI API key (NEVER expose in frontend)
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-GOOGLE_SERVICE_ACCOUNT_EMAIL=xxx@project.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
-GOOGLE_DRIVE_ROOT_FOLDER_ID=1AbCd...
-EXPECTED_RECEIVER_RFC=BLI180227F23
-```
-
-> **IMPORTANT**: No API keys should be exposed in the frontend. All sensitive operations go through backend API endpoints.
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/extract | Extract invoice data using OpenAI (server-side) |
-| POST | /api/invoice | Process and save complete invoice |
-| POST | /api/validate | Check if UUID already exists |
-| GET | /api/projects | Get list of active projects |
-| GET | /api/health | Check service health (Supabase, Drive) |
+\`\`\`
+📁 Root Folder/
+├── 📁 Semana_01_2026/
+│   ├── 📁 MERCADO_LIBRE/
+│   │   └── 📁 RFC_Name/
+│   │       └── uuid.xml, uuid.pdf
+│   └── 📁 Extemporaneas/       # Late invoices
+│       └── 📁 MERCADO_LIBRE/
+│           └── 📁 RFC_Name/
+\`\`\`
 
 ## Code Conventions
 
 ### TypeScript
-- Use explicit types, avoid `any`
-- Interfaces in `/types/` or `/lib/types.ts`
-- Use `.js` extension in API imports (ES modules requirement)
+- Use explicit types, avoid \`any\`
+- Use \`.js\` extension in API imports (ES modules)
 
 ### React Components
 - Functional components with hooks
-- Props interfaces defined inline or in types/
 - Use Tailwind for styling (no CSS files)
-- Use AlertPopup component instead of window.alert()
+- Use AlertPopup instead of window.alert()
 
 ### API Functions
 - Export default handler function
 - Always set CORS headers
-- Return consistent response format: `{ success, message, data?, error?, details? }`
-
-### Error Handling
-- Wrap async operations in try/catch
-- Log errors with console.error using emoji prefixes: 📋 (info), ✅ (success), ❌ (error), ⚠️ (warning)
-- Return user-friendly error messages in Spanish
-
-## Google Drive Structure
-
-Files are organized in a 3-level hierarchy:
-```
-📁 Root Folder/
-├── 📁 Semana_01_2026/           # Week folder
-│   ├── 📁 MERCADO_LIBRE/        # Project folder
-│   │   └── 📁 RFC_Name/         # Issuer folder
-│   │       ├── uuid.xml
-│   │       └── uuid.pdf
-```
-
-## Common Tasks
-
-### Adding a new API endpoint
-1. Create `api/endpoint.ts`
-2. Import with `.js` extension
-3. Add CORS headers
-4. Document in `docs/api/openapi.yaml`
-
-### Adding a new form field
-1. Update `types/invoice.ts` with new field
-2. Add to form state in `useInvoiceForm.ts`
-3. Add extraction in backend `api/extract.ts` prompt
-4. Add input in appropriate section component
-
-### Modifying the database
-1. Create new migration in `database/`
-2. Update `database/schema.md`
-3. Update `api/lib/types.ts`
-4. Update `api/lib/supabase.ts` functions
+- Return: \`{ success, message, data?, error?, details? }\`
 
 ## Important Notes
 
-- **ES Modules**: The project uses ES modules. API imports MUST use `.js` extensions.
-- **Vercel Functions**: Each file in `api/` becomes a serverless function.
-- **No SSR**: This is a client-side React app with API routes.
-- **Spanish UI**: User-facing text should be in Spanish.
-- **Mexican Invoices**: Focus on CFDI 4.0 format specifics.
-- **Security**: OpenAI API calls are made from the backend only. Never expose API keys in frontend code.
-
-## Validations
-
-The system validates:
-1. **Client-side (UX)**: File names match, basic field presence
-2. **Server-side (Security)**: 
-   - RFC format and expected receiver RFC
-   - UUID format and duplicates
-   - Invoice week is within active period (last 3 weeks)
-   - Required fields and data types
-
-## Known Patterns
-
-### Preventing Extraction Loops
-The `useInvoiceExtraction` hook uses a ref (`extractionAttemptedRef`) to track file pairs that have already been processed, preventing infinite loops when validation fails but files remain in state.
-
-### File Processing Flow
-1. User uploads XML + PDF
-2. Frontend validates filenames match
-3. Frontend extracts UUID from XML (quick check)
-4. Frontend calls `/api/validate` to check for duplicates
-5. Frontend calls `/api/extract` for AI extraction
-6. User reviews and confirms data
-7. Frontend calls `/api/invoice` to save
+- **ES Modules**: API imports MUST use \`.js\` extensions
+- **Timezone**: All deadlines use America/Mexico_City
+- **Security**: OpenAI calls from backend only
+- **Spanish UI**: User-facing text in Spanish
+- **Week Selection**: Removed - calculated automatically from invoice date

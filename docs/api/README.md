@@ -1,6 +1,6 @@
 # FacturaFlow API - Guía de Integración
 
-> **Versión:** 3.0.0  
+> **Versión:** 3.1.0  
 > **Base URL:** `https://sube-tu-factura.vercel.app/api`  
 > **Documentación Interactiva:** [/docs](/docs) (Swagger UI)  
 > **Última actualización:** Enero 2026
@@ -14,9 +14,11 @@
 3. [Endpoints de Administración](#endpoints-de-administración)
 4. [Endpoints de Usuario](#endpoints-de-usuario)
 5. [API Keys](#api-keys)
-6. [Ejemplos con cURL](#ejemplos-con-curl)
-7. [Códigos de Error](#códigos-de-error)
-8. [Rate Limiting](#rate-limiting)
+6. [Facturas Extemporáneas](#facturas-extemporáneas)
+7. [Match de Proyectos con IA](#match-de-proyectos-con-ia)
+8. [Ejemplos con cURL](#ejemplos-con-curl)
+9. [Códigos de Error](#códigos-de-error)
+10. [Rate Limiting](#rate-limiting)
 
 ---
 
@@ -50,7 +52,11 @@ Procesa y registra una factura CFDI completa.
 ```json
 {
   "week": 4,
+  "year": 2026,
   "project": "MERCADO LIBRE",
+  "isLate": false,
+  "lateReason": null,
+  "lateAcknowledgedAt": null,
   "paymentProgram": "standard",
   "issuer": {
     "rfc": "XAXX010101000",
@@ -309,6 +315,50 @@ Lista facturas con filtros y paginación.
 | year | number | Filtro por año |
 | project | string | Filtro por proyecto |
 | paymentProgram | string | `standard` o `pronto_pago` |
+| needsReview | boolean | Filtrar facturas que requieren revisión de proyecto |
+| isLate | boolean | Filtrar facturas extemporáneas |
+
+---
+
+### GET/POST/PUT/DELETE /api/admin/projects
+
+CRUD completo para proyectos.
+
+**GET - Lista proyectos:**
+
+```bash
+GET /api/admin/projects?include_inactive=true
+```
+
+**POST - Crear proyecto:**
+
+```json
+{
+  "code": "RAPPI",
+  "name": "Rappi Cargo",
+  "description": "Entregas de Rappi",
+  "color": "#FF5722",
+  "keywords": ["rappi", "rappicargo", "rappi cargo"],
+  "ai_description": "Servicios de entrega para Rappi y RappiCargo"
+}
+```
+
+**PUT - Actualizar proyecto:**
+
+```json
+{
+  "id": "uuid-del-proyecto",
+  "name": "Rappi Cargo Updated",
+  "keywords": ["rappi", "rappicargo"],
+  "is_active": true
+}
+```
+
+**DELETE - Desactivar proyecto:**
+
+```bash
+DELETE /api/admin/projects?id=uuid-del-proyecto
+```
 
 ---
 
@@ -516,6 +566,69 @@ curl -X GET https://sube-tu-factura.vercel.app/api/endpoint \
 | `export` | Exportación de datos |
 | `admin` | Endpoints de administración |
 | `user` | Endpoints de usuario |
+
+---
+
+## Facturas Extemporáneas
+
+### Lógica de Deadline
+
+- **Deadline**: Jueves 10:00 AM hora Ciudad de México (America/Mexico_City)
+- **Período válido**: Lunes a Domingo de la semana anterior
+
+### Tipos de facturas extemporáneas
+
+| late_reason | Descripción |
+|-------------|-------------|
+| `after_deadline` | Subida después del Jueves 10am |
+| `wrong_week` | Fecha de factura fuera del período válido |
+
+### Campos en payload
+
+```json
+{
+  "isLate": true,
+  "lateReason": "after_deadline",
+  "lateAcknowledgedAt": "2026-01-23T15:30:00.000Z"
+}
+```
+
+### Comportamiento
+
+1. Facturas extemporáneas se guardan en carpeta `Extemporaneas/` en Drive
+2. Se programan para el siguiente ciclo de pago
+3. Usuario debe confirmar que entiende (lateAcknowledgedAt)
+
+---
+
+## Match de Proyectos con IA
+
+### Proceso
+
+1. OpenAI GPT-4o analiza conceptos de factura y nombre del emisor
+2. Compara contra lista de proyectos activos con sus keywords
+3. Retorna proyecto detectado y nivel de confianza
+
+### Campos de respuesta en /api/extract
+
+```json
+{
+  "project": "MERCADO_LIBRE",
+  "projectConfidence": 0.85,
+  "needsProjectReview": false
+}
+```
+
+### Configuración de proyectos
+
+Cada proyecto puede tener:
+- `keywords`: Array de palabras clave para matching
+- `ai_description`: Descripción extendida para contexto de IA
+
+### Threshold
+
+- Si `projectConfidence < 0.7` o `project = "OTRO"`: `needsProjectReview = true`
+- Estas facturas aparecen en Admin con filtro "Requiere revisión"
 
 ---
 

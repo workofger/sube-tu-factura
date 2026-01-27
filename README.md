@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)
@@ -29,16 +29,32 @@ FacturaFlow AI es una aplicación web que automatiza el procesamiento de factura
 
 ---
 
-## Novedades v2.2.0
+## Novedades v2.3.0
+
+| Funcionalidad | Descripción |
+|---------------|-------------|
+| 📅 **Semana Automática** | Eliminado selector manual, cálculo automático basado en fecha de factura |
+| ⏰ **Facturas Extemporáneas** | Detección automática (deadline Jueves 10am CDMX), popup de confirmación |
+| 🤖 **Match de Proyectos IA** | OpenAI analiza conceptos y asigna proyecto con nivel de confianza |
+| 📁 **Carpeta Extemporáneas** | Facturas tardías en carpeta separada en Drive |
+| 🔧 **CRUD Proyectos** | Gestión completa de proyectos en admin con keywords para IA |
+| 🔍 **Filtros Admin** | Filtrar por "Requiere revisión" y "Extemporáneas" en listado |
+
+### Versiones anteriores
+
+<details>
+<summary>v2.2.0</summary>
 
 | Funcionalidad | Descripción |
 |---------------|-------------|
 | 🔑 **API Keys** | Sistema de API Keys para acceso programático |
-| 👤 **User Auth** | Autenticación de usuarios (flotilleros/drivers) con password y magic link |
+| 👤 **User Auth** | Autenticación de usuarios con password y magic link |
 | 📊 **Export XLSX** | Exportación de pagos en formato Shinkansen/BBVA |
 | ⚙️ **System Config** | Configuración del sistema desde panel admin |
 | 🏦 **Bank Info** | Información bancaria de flotilleros para dispersión |
 | 📖 **Swagger UI** | Documentación interactiva de API en `/docs` |
+
+</details>
 
 ---
 
@@ -105,6 +121,8 @@ En Supabase SQL Editor, ejecutar en orden:
 -- database/007_add_system_config.sql
 -- database/008_add_api_keys.sql
 -- database/009_add_user_auth.sql
+-- database/010_add_onboarding.sql
+-- database/011_add_late_invoice_fields.sql
 ```
 
 ### 4. Iniciar desarrollo
@@ -131,7 +149,8 @@ sube-tu-factura/
 │   ├── admin/                    # Admin endpoints
 │   │   ├── login.ts              # POST /api/admin/login
 │   │   ├── stats.ts              # GET  /api/admin/stats
-│   │   ├── invoices.ts           # GET  /api/admin/invoices
+│   │   ├── invoices.ts           # GET  /api/admin/invoices (with needsReview filter)
+│   │   ├── projects.ts           # CRUD /api/admin/projects (with keywords)
 │   │   ├── export.ts             # GET  /api/admin/export
 │   │   ├── export-payments.ts    # GET  /api/admin/export-payments (XLSX)
 │   │   ├── config.ts             # GET/PUT /api/admin/config
@@ -154,18 +173,19 @@ sube-tu-factura/
 │
 ├── src/                          # Frontend (React)
 │   ├── pages/
-│   │   ├── Upload.tsx            # Página principal de subida
+│   │   ├── Upload.tsx            # Página principal (auto week calculation)
 │   │   └── admin/                # Panel administrativo
 │   │       ├── Login.tsx
 │   │       ├── Dashboard.tsx
-│   │       ├── Invoices.tsx
+│   │       ├── Invoices.tsx      # With needsReview & isLate filters
+│   │       ├── Projects.tsx      # CRUD proyectos con keywords
 │   │       ├── Reports.tsx
 │   │       ├── Settings.tsx
 │   │       └── ApiKeys.tsx
 │   ├── components/
-│   │   ├── common/               # FileUpload, InputField, etc
+│   │   ├── common/               # FileUpload, InputField, LateInvoiceModal
 │   │   ├── layout/               # Header, WhatsAppButton
-│   │   ├── sections/             # FiscalInfo, Payment, Items
+│   │   ├── sections/             # FiscalInfo (no week selector), Payment, Items
 │   │   └── admin/                # AdminLayout, ProtectedRoute
 │   ├── hooks/
 │   │   ├── useInvoiceForm.ts
@@ -190,6 +210,8 @@ sube-tu-factura/
 │   ├── 007_add_system_config.sql
 │   ├── 008_add_api_keys.sql
 │   ├── 009_add_user_auth.sql
+│   ├── 010_add_onboarding.sql
+│   ├── 011_add_late_invoice_fields.sql  # Late invoice + project keywords
 │   └── schema.md
 │
 ├── public/docs/
@@ -233,7 +255,8 @@ sube-tu-factura/
 |--------|----------|-------------|
 | `POST` | `/api/admin/login` | Login admin |
 | `GET` | `/api/admin/stats` | Dashboard stats |
-| `GET` | `/api/admin/invoices` | Lista de facturas |
+| `GET` | `/api/admin/invoices` | Lista facturas (filtros: needsReview, isLate) |
+| `GET/POST/PUT/DELETE` | `/api/admin/projects` | CRUD proyectos (con keywords) |
 | `GET` | `/api/admin/export` | Exportar CSV |
 | `GET` | `/api/admin/export-payments` | Exportar XLSX pagos |
 | `GET/PUT` | `/api/admin/config` | Configuración sistema |
