@@ -4,7 +4,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/**/*.ts": {
+    "api/*.ts": {
+      "maxDuration": 30
+    },
+    "api/admin/*.ts": {
+      "maxDuration": 30
+    },
+    "api/user/*.ts": {
       "maxDuration": 30
     }
   },
