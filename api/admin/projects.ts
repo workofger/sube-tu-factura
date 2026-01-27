@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseClient } from '../lib/supabase.js';
-import { verifyAdminToken, AdminRole } from '../lib/adminAuth.js';
+import { verifyAdminAuth } from '../lib/adminAuth.js';
 import { ApiResponse } from '../lib/types.js';
 
 interface Project {
@@ -65,7 +65,7 @@ export default async function handler(
   }
 
   // Verify admin authentication
-  const admin = await verifyAdminToken(req);
+  const admin = await verifyAdminAuth(req);
   if (!admin) {
     return res.status(401).json({
       success: false,
@@ -106,7 +106,7 @@ export default async function handler(
     // ===== POST: Create a new project =====
     if (req.method === 'POST') {
       // Only admin and super_admin can create projects
-      if (![AdminRole.ADMIN, AdminRole.SUPER_ADMIN].includes(admin.role as AdminRole)) {
+      if (!['operations', 'super_admin'].includes(admin.role)) {
         return res.status(403).json({
           success: false,
           error: 'FORBIDDEN',
@@ -187,7 +187,7 @@ export default async function handler(
     // ===== PUT: Update a project =====
     if (req.method === 'PUT') {
       // Only admin and super_admin can update projects
-      if (![AdminRole.ADMIN, AdminRole.SUPER_ADMIN].includes(admin.role as AdminRole)) {
+      if (!['operations', 'super_admin'].includes(admin.role)) {
         return res.status(403).json({
           success: false,
           error: 'FORBIDDEN',
@@ -243,7 +243,7 @@ export default async function handler(
     // ===== DELETE: Soft delete (deactivate) a project =====
     if (req.method === 'DELETE') {
       // Only super_admin can delete projects
-      if (admin.role !== AdminRole.SUPER_ADMIN) {
+      if (admin.role !== 'super_admin') {
         return res.status(403).json({
           success: false,
           error: 'FORBIDDEN',
