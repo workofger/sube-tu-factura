@@ -22,7 +22,14 @@ import {
 
 // Utilities
 import { validateMatchingFilenames } from '../utils/xmlParser';
-import { calculatePaymentWeek, getValidPeriodDescription, formatDeadline, LateReason } from '../utils/dates';
+import { 
+  validateInvoiceWeek, 
+  getWeekNumber, 
+  getMexicoNow, 
+  getValidPeriodDescription, 
+  formatDeadline, 
+  LateReason 
+} from '../utils/dates';
 
 const UploadPage: React.FC = () => {
   // Alert modal state (renamed to avoid conflict with window.alert)
@@ -139,24 +146,28 @@ const UploadPage: React.FC = () => {
   // Calculate payment week automatically after extraction success
   useEffect(() => {
     if (extractSuccess && formData.invoiceDate && !formData.week) {
-      const result = calculatePaymentWeek(formData.invoiceDate);
+      // Validate invoice using new logic
+      const validation = validateInvoiceWeek(formData.invoiceDate, formData.weekFromDescription);
+      const mexicoNow = getMexicoNow();
+      const currentWeek = getWeekNumber(mexicoNow);
+      const currentYear = mexicoNow.getFullYear();
       
-      // Set week and year
-      setWeek(result.week.toString(), result.year);
+      // Set week and year (current week for filing, expected week for billing)
+      setWeek(currentWeek.toString(), currentYear, validation.expectedWeek);
       
-      // Set late invoice info
-      setLateInvoiceInfo(result.isLate, result.reason);
+      // Set late invoice info with all reasons
+      setLateInvoiceInfo(validation.isLate, validation.reasons);
       
-      // If late, show confirmation modal
-      if (result.isLate && result.reason) {
+      // If late, show confirmation modal with first reason
+      if (validation.isLate && validation.reasons.length > 0) {
         setLateInvoiceModal({
           isOpen: true,
-          reason: result.reason,
+          reason: validation.reasons[0], // Show primary reason
           invoiceDate: formData.invoiceDate,
         });
       }
     }
-  }, [extractSuccess, formData.invoiceDate, formData.week, setWeek, setLateInvoiceInfo]);
+  }, [extractSuccess, formData.invoiceDate, formData.week, formData.weekFromDescription, setWeek, setLateInvoiceInfo]);
 
   // Handle late invoice confirmation
   const handleLateInvoiceConfirm = useCallback(() => {
@@ -171,7 +182,7 @@ const UploadPage: React.FC = () => {
     updateField('xmlFile', null);
     updateField('pdfFile', null);
     setWeek('');
-    setLateInvoiceInfo(false);
+    setLateInvoiceInfo(false, []);
   }, [updateField, setWeek, setLateInvoiceInfo]);
 
   // Handle form submission
@@ -189,7 +200,7 @@ const UploadPage: React.FC = () => {
     if (formData.isLate && !formData.lateAcknowledged) {
       setLateInvoiceModal({
         isOpen: true,
-        reason: formData.lateReason || 'after_deadline',
+        reason: formData.lateReasons[0] || 'after_deadline',
         invoiceDate: formData.invoiceDate,
       });
       return;

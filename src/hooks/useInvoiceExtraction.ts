@@ -218,8 +218,8 @@ export const useInvoiceExtraction = ({
           cfdiUse: data.cfdiUse || prev.cfdiUse,
           
           // Selection
-          week: data.week ? data.week.toString() : prev.week,
           project: data.project || prev.project,
+          weekFromDescription: data.weekFromDescription,
           
           // Invoice ID
           invoiceDate: data.invoiceDate || prev.invoiceDate,

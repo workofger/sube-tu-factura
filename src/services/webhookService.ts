@@ -47,7 +47,8 @@ export const buildWebhookPayload = async (formData: InvoiceData): Promise<Webhoo
 
     // Late invoice info
     isLate: formData.isLate || false,
-    lateReason: formData.lateReason,
+    lateReason: formData.lateReasons?.[0], // Primary reason for backend compatibility
+    lateReasons: formData.lateReasons || [],
     lateAcknowledgedAt: formData.lateAcknowledged ? new Date().toISOString() : undefined,
 
     // Issuer (Emisor)

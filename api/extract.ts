@@ -8,7 +8,8 @@ import { getSupabaseClient } from './lib/supabase.js';
  * Extraction result interface
  */
 interface ExtractionResult {
-  week?: number;
+  weekFromDescription?: number; // Week number extracted from invoice concept/description
+  weekConfidence?: number; // 0.0 - 1.0 confidence in week extraction
   project?: string;
   projectConfidence?: number; // 0.0 - 1.0
   needsProjectReview?: boolean;
@@ -199,6 +200,11 @@ INSTRUCCIONES DE EXTRACCIÓN:
    - Las tasas varían (0.04, 0.106667, 0.0125, 0.10). Extrae exactamente lo que está en el XML.
 6. CONCEPTOS: Extrae TODOS los Conceptos con descripción completa, cantidad, unidad, precioUnitario, importe, ClaveProdServ, ObjetoImp.
 7. PROYECTO: Analiza la factura y determina el proyecto según las instrucciones abajo.
+8. SEMANA: IMPORTANTE - Busca en la descripción del concepto o condiciones de pago el número de semana.
+   - Busca patrones como: "Semana 04", "SEM 04", "S04", "semana 4", "SEMANA04", "sem04", etc.
+   - Si encuentras un número de semana, devuélvelo en weekFromDescription como número entero.
+   - Si no encuentras ninguna referencia a semana, devuelve null.
+   - Indica en weekConfidence qué tan seguro estás de la extracción (0.0 a 1.0).
 
 ${projectContext}
 
@@ -245,6 +251,8 @@ Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
   "cfdiUse": "Uso CFDI",
   "project": ${validProjectValues},
   "projectConfidence": número entre 0.0 y 1.0 indicando confianza del match de proyecto,
+  "weekFromDescription": número de semana extraído de la descripción (ej: 4, 12, 52) o null si no se encuentra,
+  "weekConfidence": número entre 0.0 y 1.0 indicando confianza de la extracción de semana,
   "invoiceDate": "YYYY-MM-DD",
   "folio": "Folio",
   "series": "Serie",
@@ -305,13 +313,18 @@ Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
     const needsReview = !result.project || result.project === 'OTRO' || confidence < 0.7;
     result.needsProjectReview = needsReview;
 
+    // Log week extraction
+    const weekConfidence = result.weekConfidence ?? 0;
+    
     console.log('📋 Extraction complete:');
     console.log('  - Emisor:', result.billerName);
     console.log('  - RFC:', result.rfc);
     console.log('  - UUID:', result.uuid);
+    console.log('  - Fecha factura:', result.invoiceDate);
     console.log('  - Total:', result.totalAmount, result.currency);
     console.log('  - Items:', result.items?.length || 0);
     console.log('  - Project:', result.project, `(confidence: ${confidence.toFixed(2)})`);
+    console.log('  - Week from description:', result.weekFromDescription ?? 'No encontrada', `(confidence: ${weekConfidence.toFixed(2)})`);
     console.log('  - Needs review:', needsReview);
 
     return res.status(200).json({

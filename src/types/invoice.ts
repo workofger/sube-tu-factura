@@ -15,17 +15,19 @@ export type PaymentProgram = 'standard' | 'pronto_pago';
 export const PRONTO_PAGO_FEE_RATE = 0.08; // 8%
 
 // Late invoice reason type
-export type LateInvoiceReason = 'after_deadline' | 'wrong_week';
+export type LateInvoiceReason = 'after_deadline' | 'wrong_invoice_date' | 'wrong_week_in_description';
 
 export interface InvoiceData {
   // Selection fields
-  week: string;
+  week: string;  // The current week number (for filing)
   year: number;
+  expectedWeek: number; // The expected billing week (previous week)
+  weekFromDescription?: number; // Week extracted from invoice description by AI
   project: string;
   
   // Late invoice flags
   isLate: boolean;
-  lateReason?: LateInvoiceReason;
+  lateReasons: LateInvoiceReason[]; // Can have multiple reasons
   lateAcknowledged: boolean;
   
   // Issuer (Emisor) fields
@@ -93,7 +95,8 @@ export enum ProjectType {
 }
 
 export interface ExtractionResult {
-  week?: number;
+  weekFromDescription?: number; // Week number extracted from invoice concept
+  weekConfidence?: number; // 0.0 - 1.0
   project?: string;
   projectConfidence?: number; // 0.0 - 1.0
   needsProjectReview?: boolean;
@@ -152,7 +155,8 @@ export interface WebhookPayload {
   
   // Late invoice info
   isLate: boolean;
-  lateReason?: LateInvoiceReason;
+  lateReason?: LateInvoiceReason; // Primary reason for backwards compatibility
+  lateReasons: LateInvoiceReason[]; // All reasons
   lateAcknowledgedAt?: string;
   
   // Issuer (Emisor)

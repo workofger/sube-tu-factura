@@ -4,10 +4,12 @@ import { InvoiceData, InvoiceItem, ProjectType, PaymentProgram, PRONTO_PAGO_FEE_
 const initialFormData: InvoiceData = {
   week: '',
   year: new Date().getFullYear(),
+  expectedWeek: 0,
+  weekFromDescription: undefined,
   project: ProjectType.MERCADO_LIBRE,
   // Late invoice fields
   isLate: false,
-  lateReason: undefined,
+  lateReasons: [],
   lateAcknowledged: false,
   rfc: '',
   billerName: '',
@@ -85,20 +87,29 @@ export const useInvoiceForm = () => {
     setIsConfirmed(false);
   }, []);
 
-  const setWeek = useCallback((week: string, year?: number) => {
+  const setWeek = useCallback((week: string, year?: number, expectedWeek?: number) => {
     setFormData(prev => ({ 
       ...prev, 
       week,
       year: year ?? prev.year,
+      expectedWeek: expectedWeek ?? prev.expectedWeek,
     }));
   }, []);
 
-  // Set late invoice info
-  const setLateInvoiceInfo = useCallback((isLate: boolean, reason?: LateInvoiceReason) => {
+  // Set week extracted from description
+  const setWeekFromDescription = useCallback((weekFromDescription?: number) => {
+    setFormData(prev => ({
+      ...prev,
+      weekFromDescription,
+    }));
+  }, []);
+
+  // Set late invoice info (with multiple reasons)
+  const setLateInvoiceInfo = useCallback((isLate: boolean, reasons: LateInvoiceReason[] = []) => {
     setFormData(prev => ({
       ...prev,
       isLate,
-      lateReason: reason,
+      lateReasons: reasons,
       lateAcknowledged: false, // Reset acknowledgment when late status changes
     }));
   }, []);
@@ -197,5 +208,6 @@ export const useInvoiceForm = () => {
     // Late invoice
     setLateInvoiceInfo,
     acknowledgeLateInvoice,
+    setWeekFromDescription,
   };
 };

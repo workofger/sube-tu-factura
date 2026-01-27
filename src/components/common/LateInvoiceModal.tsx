@@ -23,8 +23,6 @@ const LateInvoiceModal: React.FC<LateInvoiceModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const isAfterDeadline = reason === 'after_deadline';
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -62,7 +60,7 @@ const LateInvoiceModal: React.FC<LateInvoiceModalProps> = ({
         <div className="p-6 space-y-4">
           {/* Reason explanation */}
           <div className="bg-slate-900/50 rounded-xl p-4">
-            {isAfterDeadline ? (
+            {reason === 'after_deadline' ? (
               <>
                 <div className="flex items-center gap-2 text-amber-400 mb-2">
                   <Clock className="w-5 h-5" />
@@ -75,14 +73,14 @@ const LateInvoiceModal: React.FC<LateInvoiceModalProps> = ({
                   El deadline era: <span className="text-amber-400">{deadline}</span>
                 </p>
               </>
-            ) : (
+            ) : reason === 'wrong_invoice_date' ? (
               <>
                 <div className="flex items-center gap-2 text-amber-400 mb-2">
                   <Calendar className="w-5 h-5" />
                   <span className="font-semibold">Fecha de factura incorrecta</span>
                 </div>
                 <p className="text-slate-300 text-sm">
-                  La fecha de tu factura no corresponde al período de facturación actual.
+                  La fecha de tu factura debe ser entre <strong>Martes y Jueves</strong> de esta semana.
                 </p>
                 <div className="mt-3 space-y-1">
                   <p className="text-slate-400 text-xs">
@@ -101,6 +99,29 @@ const LateInvoiceModal: React.FC<LateInvoiceModalProps> = ({
                     <span className="text-amber-400">{validPeriod}</span>
                   </p>
                 </div>
+              </>
+            ) : reason === 'wrong_week_in_description' ? (
+              <>
+                <div className="flex items-center gap-2 text-amber-400 mb-2">
+                  <Calendar className="w-5 h-5" />
+                  <span className="font-semibold">Semana incorrecta en la descripción</span>
+                </div>
+                <p className="text-slate-300 text-sm">
+                  La semana indicada en la descripción de la factura no corresponde a la semana que debes facturar.
+                </p>
+                <p className="text-slate-400 text-xs mt-2">
+                  Verifica que tu factura indique la semana correcta en el concepto.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 text-amber-400 mb-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="font-semibold">Factura extemporánea</span>
+                </div>
+                <p className="text-slate-300 text-sm">
+                  Esta factura no cumple con los requisitos del período de facturación actual.
+                </p>
               </>
             )}
           </div>
