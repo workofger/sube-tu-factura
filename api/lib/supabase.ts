@@ -114,38 +114,93 @@ export const upsertDriver = async (payload: InvoicePayload): Promise<DbDriver> =
   // First, ensure flotillero exists
   const flotillero = await upsertFlotillero(payload);
   
-  // Split name into parts
+  // Check if driver already exists by RFC
+  const { data: existingDriver } = await client
+    .from('drivers')
+    .select('*')
+    .eq('rfc', issuer.rfc)
+    .single();
+  
+  if (existingDriver) {
+    // Update existing driver (don't change email to avoid unique constraint issues)
+    const updateData: Record<string, unknown> = {
+      fiscal_name: issuer.name,
+      flotillero_id: flotillero.id,
+      status: 'active'
+    };
+    
+    // Only update optional fields if provided
+    if (issuer.regime) {
+      updateData.fiscal_regime_code = issuer.regime.substring(0, 3);
+    }
+    if (issuer.zipCode) {
+      updateData.fiscal_zip_code = issuer.zipCode;
+    }
+    if (payload.contact.phone) {
+      updateData.phone = payload.contact.phone;
+    }
+    
+    const { data, error } = await client
+      .from('drivers')
+      .update(updateData)
+      .eq('rfc', issuer.rfc)
+      .select()
+      .single();
+    
+    if (error) {
+      throw new Error(`Failed to update driver: ${error.message}`);
+    }
+    
+    return data as DbDriver;
+  }
+  
+  // Create new driver
   const nameParts = (issuer.name || '').trim().split(' ');
   const firstName = nameParts[0] || 'Sin nombre';
   const lastName = nameParts.slice(1).join(' ') || '';
-  
-  // Extract regime code (first 3 chars)
   const regimeCode = issuer.regime ? issuer.regime.substring(0, 3) : null;
+  
+  // Generate unique email for new driver
+  const baseEmail = payload.contact.email || `${issuer.rfc.toLowerCase()}@pendiente.com`;
   
   const driverData = {
     rfc: issuer.rfc,
     fiscal_name: issuer.name,
     first_name: firstName,
     last_name: lastName,
-    email: payload.contact.email || `${issuer.rfc.toLowerCase()}@pendiente.com`,
+    email: baseEmail,
     phone: payload.contact.phone || null,
     fiscal_regime_code: regimeCode,
     fiscal_zip_code: issuer.zipCode || null,
-    flotillero_id: flotillero.id, // Link to flotillero
+    flotillero_id: flotillero.id,
     status: 'active'
   };
   
   const { data, error } = await client
     .from('drivers')
-    .upsert(driverData, { 
-      onConflict: 'rfc',
-      ignoreDuplicates: false 
-    })
+    .insert(driverData)
     .select()
     .single();
   
   if (error) {
-    throw new Error(`Failed to upsert driver: ${error.message}`);
+    // If email conflict, try with RFC-based email
+    if (error.message.includes('drivers_email_key')) {
+      driverData.email = `${issuer.rfc.toLowerCase()}@driver.local`;
+      
+      const retryResult = await client
+        .from('drivers')
+        .insert(driverData)
+        .select()
+        .single();
+      
+      if (retryResult.error) {
+        throw new Error(`Failed to insert driver: ${retryResult.error.message}`);
+      }
+      
+      return retryResult.data as DbDriver;
+    }
+    
+    throw new Error(`Failed to insert driver: ${error.message}`);
   }
   
   return data as DbDriver;
