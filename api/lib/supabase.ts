@@ -204,6 +204,14 @@ export const insertInvoice = async (
     flotilleroId = flotillero.id;
   }
   
+  // Helper to extract code from strings like "601 - Description" or just "601"
+  const extractCode = (value: string | undefined, maxLen: number): string | null => {
+    if (!value) return null;
+    // If it contains " - ", take only the part before
+    const code = value.split(' - ')[0].trim();
+    return code.substring(0, maxLen);
+  };
+  
   // Base invoice data (core fields that always exist)
   const invoiceData: Record<string, unknown> = {
     driver_id: driverId,
@@ -217,15 +225,15 @@ export const insertInvoice = async (
     sat_cert_number: payload.invoice.satCertNumber || null,
     issuer_rfc: payload.issuer.rfc,
     issuer_name: payload.issuer.name,
-    issuer_regime: payload.issuer.regime || null,
-    issuer_zip_code: payload.issuer.zipCode || null,
+    issuer_regime: extractCode(payload.issuer.regime, 10),
+    issuer_zip_code: extractCode(payload.issuer.zipCode, 5),
     receiver_rfc: payload.receiver.rfc,
     receiver_name: payload.receiver.name || null,
-    receiver_regime: payload.receiver.regime || null,
-    receiver_zip_code: payload.receiver.zipCode || null,
-    cfdi_use: payload.receiver.cfdiUse || null,
+    receiver_regime: extractCode(payload.receiver.regime, 10),
+    receiver_zip_code: extractCode(payload.receiver.zipCode, 5),
+    cfdi_use: extractCode(payload.receiver.cfdiUse, 10),
     payment_method: payload.payment.method,
-    payment_form: payload.payment.form || null,
+    payment_form: extractCode(payload.payment.form, 10),
     payment_conditions: payload.payment.conditions || null,
     subtotal: payload.financial.subtotal || 0,
     total_tax: payload.financial.totalTax || 0,
