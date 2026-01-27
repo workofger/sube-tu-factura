@@ -104,8 +104,8 @@ export const upsertFlotillero = async (payload: InvoicePayload): Promise<DbFloti
 };
 
 /**
- * Get or create a driver by RFC (legacy support)
- * Now also ensures the driver is linked to a flotillero
+ * Get or create a driver by RFC
+ * RFC is the unique identifier - same driver can upload multiple invoices
  */
 export const upsertDriver = async (payload: InvoicePayload): Promise<DbDriver> => {
   const client = getSupabaseClient();
@@ -121,54 +121,27 @@ export const upsertDriver = async (payload: InvoicePayload): Promise<DbDriver> =
     .eq('rfc', issuer.rfc)
     .single();
   
+  // If driver exists, return it (no updates needed)
   if (existingDriver) {
-    // Update existing driver (don't change email to avoid unique constraint issues)
-    const updateData: Record<string, unknown> = {
-      fiscal_name: issuer.name,
-      flotillero_id: flotillero.id,
-      status: 'active'
-    };
-    
-    // Only update optional fields if provided
-    if (issuer.regime) {
-      updateData.fiscal_regime_code = issuer.regime.substring(0, 3);
-    }
-    if (issuer.zipCode) {
-      updateData.fiscal_zip_code = issuer.zipCode;
-    }
-    if (payload.contact.phone) {
-      updateData.phone = payload.contact.phone;
-    }
-    
-    const { data, error } = await client
-      .from('drivers')
-      .update(updateData)
-      .eq('rfc', issuer.rfc)
-      .select()
-      .single();
-    
-    if (error) {
-      throw new Error(`Failed to update driver: ${error.message}`);
-    }
-    
-    return data as DbDriver;
+    console.log('✅ Driver found by RFC:', issuer.rfc);
+    return existingDriver as DbDriver;
   }
   
   // Create new driver
+  console.log('📝 Creating new driver for RFC:', issuer.rfc);
+  
   const nameParts = (issuer.name || '').trim().split(' ');
   const firstName = nameParts[0] || 'Sin nombre';
   const lastName = nameParts.slice(1).join(' ') || '';
   const regimeCode = issuer.regime ? issuer.regime.substring(0, 3) : null;
-  
-  // Generate unique email for new driver
-  const baseEmail = payload.contact.email || `${issuer.rfc.toLowerCase()}@pendiente.com`;
+  const email = payload.contact.email || `${issuer.rfc.toLowerCase()}@pendiente.com`;
   
   const driverData = {
     rfc: issuer.rfc,
     fiscal_name: issuer.name,
     first_name: firstName,
     last_name: lastName,
-    email: baseEmail,
+    email: email,
     phone: payload.contact.phone || null,
     fiscal_regime_code: regimeCode,
     fiscal_zip_code: issuer.zipCode || null,
@@ -183,24 +156,7 @@ export const upsertDriver = async (payload: InvoicePayload): Promise<DbDriver> =
     .single();
   
   if (error) {
-    // If email conflict, try with RFC-based email
-    if (error.message.includes('drivers_email_key')) {
-      driverData.email = `${issuer.rfc.toLowerCase()}@driver.local`;
-      
-      const retryResult = await client
-        .from('drivers')
-        .insert(driverData)
-        .select()
-        .single();
-      
-      if (retryResult.error) {
-        throw new Error(`Failed to insert driver: ${retryResult.error.message}`);
-      }
-      
-      return retryResult.data as DbDriver;
-    }
-    
-    throw new Error(`Failed to insert driver: ${error.message}`);
+    throw new Error(`Failed to create driver: ${error.message}`);
   }
   
   return data as DbDriver;
