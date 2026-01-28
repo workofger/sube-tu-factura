@@ -1,30 +1,40 @@
 -- Migration: 012_allow_null_rfc.sql
--- Description: Allow NULL RFC for flotilleros created from admin panel
--- The RFC will be provided later during onboarding or first invoice upload
+-- Description: Allow NULL for columns that are completed during onboarding
+-- Users created from admin panel only have email and phone initially
 -- Date: 2026-01-28
 
 -- ============================================================================
 -- IMPORTANT: Run this migration in Supabase SQL Editor
 -- ============================================================================
 
--- Allow NULL RFC for flotilleros (for admin-created users before onboarding)
-ALTER TABLE flotilleros 
-ALTER COLUMN rfc DROP NOT NULL;
+-- ========================================
+-- FLOTILLEROS - Make onboarding fields optional
+-- ========================================
+ALTER TABLE flotilleros ALTER COLUMN rfc DROP NOT NULL;
+ALTER TABLE flotilleros ALTER COLUMN fiscal_name DROP NOT NULL;
 
--- Also for drivers table
-ALTER TABLE drivers 
-ALTER COLUMN rfc DROP NOT NULL;
+-- ========================================
+-- DRIVERS - Make onboarding fields optional
+-- ========================================
+ALTER TABLE drivers ALTER COLUMN rfc DROP NOT NULL;
+ALTER TABLE drivers ALTER COLUMN fiscal_name DROP NOT NULL;
+ALTER TABLE drivers ALTER COLUMN first_name DROP NOT NULL;
+ALTER TABLE drivers ALTER COLUMN last_name DROP NOT NULL;
 
--- Add a constraint to ensure RFC is valid format when provided
--- RFC format: 3-4 letters + 6 digits (date) + 3 alphanumeric (homoclave)
--- Examples: XAXX010101000 (generic), ABC123456XY9 (company), ABCD123456XY9 (person)
-
--- Note: We keep UNIQUE constraint so no duplicate RFCs are allowed
--- But NULL values are allowed (multiple users can have NULL RFC initially)
+-- ========================================
+-- Notes:
+-- ========================================
+-- - UNIQUE constraints are kept (no duplicate RFCs when provided)
+-- - NULL values are allowed (multiple users can have NULL initially)
+-- - These fields will be completed during:
+--   1. User onboarding wizard
+--   2. First invoice upload
+--   3. Admin manual update
 
 -- Verify changes
 DO $$
 BEGIN
-    RAISE NOTICE '✅ RFC column is now nullable for flotilleros and drivers';
-    RAISE NOTICE '   Users can be created without RFC and add it during onboarding';
+    RAISE NOTICE '✅ Columns are now nullable for admin-created users';
+    RAISE NOTICE '   - flotilleros: rfc, fiscal_name';
+    RAISE NOTICE '   - drivers: rfc, fiscal_name, first_name, last_name';
 END $$;
