@@ -179,11 +179,12 @@ export const useInvoiceExtraction = ({
         const weekValidation = validateInvoiceWeek(data.invoiceDate);
         if (!weekValidation.valid) {
           onValidationAlert?.({
-            type: 'error',
-            title: 'Período de carga vencido',
-            message: weekValidation.error || 'La fecha de factura corresponde a una semana que ya no está activa.',
+            type: 'warning',
+            title: 'Carga Extemporánea',
+            message: 'Esta factura corresponde a una semana fuera del período regular. Se programará para pago extemporáneo.',
+            details: `Semana ${weekValidation.week} del ${weekValidation.year}`,
           });
-          // Don't return - show data but validation will block submission
+          // Don't return - allow upload but flag as late payment
         }
       }
 
