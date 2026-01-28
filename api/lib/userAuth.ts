@@ -165,12 +165,12 @@ export async function getFlotilleroById(id: string): Promise<Flotillero | null> 
 export async function validateUserCredentials(
   email: string, 
   password: string
-): Promise<Flotillero | null> {
+): Promise<(Flotillero & { requires_password_change?: boolean }) | null> {
   const supabase = getSupabaseClient();
   
   const { data: flotillero, error } = await supabase
     .from('flotilleros')
-    .select('*, password_hash')
+    .select('*, password_hash, temp_password_hash, requires_password_change')
     .eq('email', email.toLowerCase())
     .single();
 
@@ -185,21 +185,28 @@ export async function validateUserCredentials(
     return null;
   }
 
-  // Check if password hash exists
-  if (!flotillero.password_hash) {
+  // Check for password - either permanent or temporary
+  const passwordToCheck = flotillero.password_hash || flotillero.temp_password_hash;
+  
+  if (!passwordToCheck) {
     console.log('❌ No password set for:', email);
     return null;
   }
 
   // Verify password
-  const validPassword = await verifyPassword(password, flotillero.password_hash);
+  const validPassword = await verifyPassword(password, passwordToCheck);
   
   if (!validPassword) {
     // Increment failed attempts
+    const newAttempts = (flotillero.failed_login_attempts || 0) + 1;
     await supabase
       .from('flotilleros')
       .update({ 
-        failed_login_attempts: (flotillero.failed_login_attempts || 0) + 1 
+        failed_login_attempts: newAttempts,
+        // Lock account after 5 failed attempts for 15 minutes
+        locked_until: newAttempts >= 5 
+          ? new Date(Date.now() + 15 * 60 * 1000).toISOString() 
+          : null
       })
       .eq('id', flotillero.id);
 
@@ -212,13 +219,20 @@ export async function validateUserCredentials(
     .from('flotilleros')
     .update({ 
       failed_login_attempts: 0,
+      locked_until: null,
       last_login_at: new Date().toISOString(),
+      login_count: (flotillero.login_count || 0) + 1
     })
     .eq('id', flotillero.id);
 
-  // Remove password_hash from returned object
-  const { password_hash: _, ...user } = flotillero;
-  return user as Flotillero;
+  // Remove password hashes from returned object
+  const { password_hash: _p, temp_password_hash: _t, ...user } = flotillero;
+  
+  // Flag if user needs to change password (using temp password or explicitly required)
+  return {
+    ...user,
+    requires_password_change: flotillero.requires_password_change || !flotillero.password_hash
+  } as Flotillero & { requires_password_change?: boolean };
 }
 
 // ========== Magic Link Functions ==========

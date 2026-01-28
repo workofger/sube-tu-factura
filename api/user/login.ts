@@ -61,19 +61,9 @@ export default async function handler(
       } as ApiResponse);
     }
 
-    // Check if email is verified
-    if (!user.email_verified) {
-      await logAuthEvent(user.id, 'login_unverified', false, req, 'Email not verified');
-      
-      return res.status(403).json({
-        success: false,
-        error: 'EMAIL_NOT_VERIFIED',
-        message: 'Por favor verifica tu email antes de iniciar sesión',
-      } as ApiResponse);
-    }
-
-    // Check account status
-    if (user.status !== 'active') {
+    // Check account status - allow pending_verification for admin-created users
+    const allowedStatuses = ['active', 'pending_verification'];
+    if (!allowedStatuses.includes(user.status)) {
       await logAuthEvent(user.id, 'login_inactive', false, req, `Account status: ${user.status}`);
       
       return res.status(403).json({
@@ -82,6 +72,9 @@ export default async function handler(
         message: 'Tu cuenta no está activa. Contacta a soporte.',
       } as ApiResponse);
     }
+
+    // Note: Email verification is handled during onboarding, not blocking login
+    // Admin-created users can login with temp password and verify email later
 
     // Generate JWT
     const token = createUserJWT({
@@ -101,6 +94,9 @@ export default async function handler(
 
     console.log(`✅ User logged in: ${user.email}`);
 
+    // Check if user needs to complete onboarding
+    const needsOnboarding = user.requires_password_change || !user.rfc || !user.fiscal_name;
+
     return res.status(200).json({
       success: true,
       message: 'Inicio de sesión exitoso',
@@ -111,6 +107,8 @@ export default async function handler(
           fiscal_name: user.fiscal_name,
           email: user.email,
           type: user.type,
+          requiresPasswordChange: user.requires_password_change || false,
+          needsOnboarding,
         },
         token,
       },
