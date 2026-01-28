@@ -3,7 +3,7 @@ import { Sun, Moon, FileText } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export const Header: React.FC = () => {
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   return (
     <header className="bg-partrunner-yellow dark:bg-partrunner-black text-partrunner-black dark:text-white pt-8 pb-24 px-6 relative overflow-hidden transition-colors duration-300">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, CheckCircle, FileText, FileCode, X } from 'lucide-react';
+import { Upload, FileText, FileCode, X } from 'lucide-react';
 import { formatFileSize } from '../../utils/files';
 
 interface FileUploadProps {
