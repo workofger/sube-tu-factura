@@ -1,5 +1,5 @@
-import React from 'react';
-import { Upload, CheckCircle, FileText, FileCode } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, CheckCircle, FileText, FileCode, X } from 'lucide-react';
 import { formatFileSize } from '../../utils/files';
 
 interface FileUploadProps {
@@ -17,6 +17,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onChange, 
   iconType 
 }) => {
+  const [isDragging, setIsDragging] = useState(false);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onChange(e.target.files[0]);
@@ -25,6 +27,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
+    setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       // Validate file type
@@ -38,11 +41,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onChange(null);
   };
 
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-sm font-bold text-gray-700 ml-1">{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-0.5">{label}</label>
       <div className="relative">
         <input
           type="file"
@@ -55,26 +70,58 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           htmlFor={`file-${label}`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
-          className={`flex items-center justify-between w-full p-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-200 
+          onDragLeave={handleDragLeave}
+          className={`
+            flex items-center justify-between w-full p-4 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
             ${file 
-              ? 'border-green-400 bg-green-50' 
-              : 'border-gray-300 hover:border-yellow-400 bg-gray-50 hover:bg-white'
-            }`}
+              ? 'border-green-400 dark:border-green-500/50 bg-green-50 dark:bg-green-500/10' 
+              : isDragging
+                ? 'border-partrunner-yellow bg-partrunner-yellow/5 scale-[1.02]'
+                : 'border-gray-200 dark:border-partrunner-gray-dark hover:border-partrunner-yellow/50 bg-gray-50 dark:bg-partrunner-black/30 hover:bg-white dark:hover:bg-partrunner-charcoal'
+            }
+          `}
         >
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${file ? 'bg-green-200 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
-              {iconType === 'xml' ? <FileCode size={20} /> : <FileText size={20} />}
+            <div className={`p-2.5 rounded-xl transition-colors duration-200 ${
+              file 
+                ? 'bg-green-200 dark:bg-green-500/20 text-green-600 dark:text-green-400' 
+                : isDragging
+                  ? 'bg-partrunner-yellow/20 text-partrunner-yellow'
+                  : 'bg-gray-200 dark:bg-partrunner-gray-dark text-gray-500 dark:text-gray-400'
+            }`}>
+              {iconType === 'xml' ? <FileCode size={22} /> : <FileText size={22} />}
             </div>
             <div className="flex flex-col">
-              <span className={`text-sm font-medium ${file ? 'text-green-800' : 'text-gray-600'}`}>
-                {file ? file.name : 'Arrastra o haz clic para subir...'}
+              <span className={`text-sm font-medium truncate max-w-[180px] ${
+                file 
+                  ? 'text-green-700 dark:text-green-400' 
+                  : 'text-gray-600 dark:text-gray-400'
+              }`}>
+                {file ? file.name : 'Arrastra o haz clic...'}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-400 dark:text-gray-500">
                 {file ? formatFileSize(file.size) : `Archivo ${iconType.toUpperCase()}`}
               </span>
             </div>
           </div>
-          {file ? <CheckCircle size={20} className="text-green-500" /> : <Upload size={20} className="text-gray-400" />}
+          
+          {file ? (
+            <button
+              onClick={handleRemove}
+              className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 text-green-500 hover:text-red-500 dark:hover:text-red-400 transition-colors duration-200"
+              title="Eliminar archivo"
+            >
+              <X size={18} />
+            </button>
+          ) : (
+            <div className={`p-2 rounded-lg transition-colors duration-200 ${
+              isDragging 
+                ? 'bg-partrunner-yellow/20 text-partrunner-yellow' 
+                : 'text-gray-400 dark:text-gray-500'
+            }`}>
+              <Upload size={20} />
+            </div>
+          )}
         </label>
       </div>
     </div>

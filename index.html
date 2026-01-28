@@ -1,15 +1,44 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="no-transition">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="FacturaFlow AI - Sube y procesa tus facturas CFDI con inteligencia artificial" />
-    <title>FacturaFlow AI - Sube tu Factura</title>
+    <meta name="description" content="Partrunner - Sube y procesa tus facturas CFDI de forma rápida y segura con extracción inteligente" />
+    <meta name="theme-color" content="#F5C341" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Partrunner - Sube tu Factura" />
+    <meta property="og:description" content="Plataforma de gestión de facturas CFDI para operadores logísticos" />
+    <meta property="og:image" content="/images/logo-full-color.png" />
+    
+    <title>Partrunner - Sube tu Factura</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/icon-color.png" />
+    <link rel="apple-touch-icon" href="/images/icon-color.png" />
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Prevent flash of unstyled content on theme load -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('partrunner-theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+        // Remove no-transition class after page load
+        window.addEventListener('load', function() {
+          document.documentElement.classList.remove('no-transition');
+        });
+      })();
+    </script>
   </head>
-  <body>
+  <body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Sparkles, Loader2, AlertTriangle, FileWarning } from 'lucide-react';
+import { Sparkles, Loader2, AlertTriangle, FileWarning, Upload, CheckCircle } from 'lucide-react';
 import { FileUpload } from '../common';
 import { InvoiceData } from '../../types/invoice';
 import { validateMatchingFilenames } from '../../utils/xmlParser';
@@ -29,25 +29,27 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   const displayError = filenameError || (!filenameValidation.valid ? filenameValidation.error : null);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-        <span className="bg-yellow-100 text-yellow-700 p-1.5 rounded-lg">
-          <Sparkles size={18} />
+    <div className="space-y-5">
+      {/* Section Header */}
+      <div className="section-header">
+        <span className="section-icon">
+          <Upload size={18} />
         </span>
-        <h3 className="font-bold text-gray-800 text-lg">1. Carga de Archivos</h3>
+        <h3 className="section-title">Carga de Archivos</h3>
       </div>
 
-      <div className="bg-yellow-50/50 p-6 rounded-2xl border border-yellow-100 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Upload Area */}
+      <div className="card p-6 space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <FileUpload
-            label="XML"
+            label="Archivo XML"
             accept=".xml"
             file={formData.xmlFile}
             onChange={(f) => onFileChange('xmlFile', f)}
             iconType="xml"
           />
           <FileUpload
-            label="PDF"
+            label="Archivo PDF"
             accept=".pdf"
             file={formData.pdfFile}
             onChange={(f) => onFileChange('pdfFile', f)}
@@ -57,32 +59,34 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 
         {/* Filename mismatch error */}
         {displayError && (
-          <div className="flex items-center gap-2 text-orange-600 bg-orange-50 px-4 py-3 rounded-xl border border-orange-200 text-sm">
+          <div className="flex items-center gap-3 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-4 py-3 rounded-xl border border-orange-200 dark:border-orange-500/30 text-sm">
             <FileWarning size={18} className="flex-shrink-0" />
             <span className="font-medium">{displayError}</span>
           </div>
         )}
 
-        <div className="flex items-center justify-center min-h-[40px]">
+        {/* Status Messages */}
+        <div className="flex items-center justify-center min-h-[48px]">
           {isExtracting ? (
-            <div className="flex items-center gap-2 text-yellow-700 bg-white px-4 py-2 rounded-full shadow-sm border border-yellow-200 animate-pulse text-sm">
-              <Loader2 size={16} className="animate-spin" />
+            <div className="flex items-center gap-3 text-partrunner-yellow-dark dark:text-partrunner-yellow bg-partrunner-yellow/10 px-5 py-3 rounded-xl border border-partrunner-yellow/30 animate-pulse text-sm">
+              <Loader2 size={18} className="animate-spin" />
               <span className="font-semibold">Leyendo factura y completando formulario...</span>
             </div>
           ) : extractSuccess ? (
-            <div className="flex items-center gap-2 text-green-700 bg-white px-4 py-2 rounded-full shadow-sm border border-green-200 text-sm">
-              <Sparkles size={16} />
-              <span className="font-semibold">¡Datos extraídos! Por favor verifica la información abajo.</span>
+            <div className="flex items-center gap-3 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 px-5 py-3 rounded-xl border border-green-200 dark:border-green-500/30 text-sm">
+              <CheckCircle size={18} />
+              <span className="font-semibold">¡Datos extraídos! Verifica la información abajo.</span>
             </div>
           ) : extractError ? (
-            <div className="flex items-center gap-2 text-red-600 bg-white px-4 py-2 rounded-full shadow-sm border border-red-200 text-sm">
-              <AlertTriangle size={16} />
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-5 py-3 rounded-xl border border-red-200 dark:border-red-500/30 text-sm">
+              <AlertTriangle size={18} />
               <span className="font-semibold">Error al leer. Llena los campos manualmente.</span>
             </div>
           ) : (
-            <p className="text-center text-gray-400 text-sm">
-              Sube tus archivos para iniciar la extracción automática con IA.
-            </p>
+            <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500 text-sm">
+              <Sparkles size={18} />
+              <span>Sube tus archivos para extracción automática con IA</span>
+            </div>
           )}
         </div>
       </div>
