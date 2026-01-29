@@ -348,7 +348,7 @@ const UploadPage: React.FC = () => {
                     {submitResult && (
                       <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-3 ${
                         submitResult.success 
-                          ? 'bg-green-50 text-green-700 border border-green-200' 
+                          ? 'bg-partrunner-yellow/10 text-partrunner-black border border-partrunner-yellow/30' 
                           : 'bg-red-50 text-red-700 border border-red-200'
                       }`}>
                         {submitResult.success ? <Check size={18} /> : <AlertTriangle size={18} />}

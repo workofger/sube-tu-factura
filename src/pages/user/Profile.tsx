@@ -108,9 +108,9 @@ const UserProfile: React.FC = () => {
 
       {/* Status Messages */}
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600" />
-          <p className="text-green-700">{success}</p>
+        <div className="bg-partrunner-yellow/10 border border-partrunner-yellow/30 rounded-xl p-4 mb-6 flex items-center gap-3">
+          <CheckCircle className="w-5 h-5 text-partrunner-yellow-accent" />
+          <p className="text-partrunner-black">{success}</p>
         </div>
       )}
 
@@ -155,7 +155,7 @@ const UserProfile: React.FC = () => {
                 <Mail className="w-4 h-4 text-gray-400" />
                 {user?.email || '-'}
                 {user?.email_verified && (
-                  <CheckCircle className="w-4 h-4 text-green-500 ml-auto" />
+                  <CheckCircle className="w-4 h-4 text-partrunner-yellow-accent ml-auto" />
                 )}
               </div>
             </div>
@@ -171,8 +171,8 @@ const UserProfile: React.FC = () => {
         {/* Contact Information */}
         <div className="bg-white rounded-2xl border border-partrunner-gray-light p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-              <User className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 bg-partrunner-yellow/20 rounded-xl flex items-center justify-center">
+              <User className="w-5 h-5 text-partrunner-yellow-accent" />
             </div>
             <h2 className="text-lg font-semibold text-partrunner-black">Información de Contacto</h2>
           </div>
@@ -247,7 +247,7 @@ const UserProfile: React.FC = () => {
               </p>
             </div>
             {user?.bank_clabe && (
-              <span className="ml-auto px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1 font-medium">
+              <span className="ml-auto px-3 py-1 bg-partrunner-yellow/20 text-partrunner-yellow-accent text-xs rounded-full flex items-center gap-1 font-medium">
                 <CheckCircle className="w-3 h-3" />
                 Configurado
               </span>

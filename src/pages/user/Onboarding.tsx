@@ -183,8 +183,8 @@ const Onboarding: React.FC = () => {
           <div className="text-center py-8">
             {onboardingStatus?.steps.verify_email.completed ? (
               <>
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-10 h-10 text-green-600" />
+                <div className="w-20 h-20 bg-partrunner-yellow/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-10 h-10 text-partrunner-yellow-accent" />
                 </div>
                 <h3 className="text-xl font-semibold text-partrunner-black mb-2">Email Verificado</h3>
                 <p className="text-gray-500 mb-6">
@@ -381,8 +381,8 @@ const Onboarding: React.FC = () => {
         if (!onboardingStatus?.steps.change_password.required) {
           return (
             <div className="text-center py-8">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-10 h-10 text-green-600" />
+              <div className="w-20 h-20 bg-partrunner-yellow/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-partrunner-yellow-accent" />
               </div>
               <h3 className="text-xl font-semibold text-partrunner-black mb-2">¡Todo listo!</h3>
               <p className="text-gray-500 mb-6">Has completado toda la información requerida.</p>
@@ -500,8 +500,8 @@ const Onboarding: React.FC = () => {
     return (
       <div className="min-h-screen bg-partrunner-bg-main flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-partrunner-gray-light p-8 max-w-md w-full text-center shadow-xl">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-green-600" />
+          <div className="w-20 h-20 bg-partrunner-yellow/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-partrunner-yellow-accent" />
           </div>
           <h2 className="text-2xl font-bold text-partrunner-black mb-4">¡Configuración Completa!</h2>
           <p className="text-gray-500 mb-8">
@@ -574,7 +574,7 @@ const Onboarding: React.FC = () => {
                     disabled={status === 'pending'}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                       status === 'completed'
-                        ? 'text-green-600'
+                        ? 'text-partrunner-yellow-accent'
                         : status === 'current'
                         ? 'text-partrunner-black bg-white shadow-sm border border-partrunner-gray-light'
                         : 'text-gray-400'
@@ -590,7 +590,7 @@ const Onboarding: React.FC = () => {
                   {!isLast && step.key !== 'change_password' && (
                     <div
                       className={`flex-1 h-0.5 mx-2 ${
-                        status === 'completed' ? 'bg-green-500' : 'bg-gray-200'
+                        status === 'completed' ? 'bg-partrunner-yellow' : 'bg-gray-200'
                       }`}
                     />
                   )}
@@ -610,9 +610,9 @@ const Onboarding: React.FC = () => {
           )}
 
           {success && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-              <p className="text-green-700">{success}</p>
+            <div className="bg-partrunner-yellow/10 border border-partrunner-yellow/30 rounded-xl p-4 mb-4 flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-partrunner-yellow-accent flex-shrink-0" />
+              <p className="text-partrunner-black">{success}</p>
             </div>
           )}
 

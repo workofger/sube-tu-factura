@@ -53,7 +53,7 @@ const Dashboard: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       pending_review: 'bg-amber-100 text-amber-700 border-amber-200',
-      approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      approved: 'bg-partrunner-yellow/20 text-partrunner-yellow-accent border-partrunner-yellow/30',
       rejected: 'bg-red-100 text-red-700 border-red-200',
       paid: 'bg-blue-100 text-blue-700 border-blue-200',
     };
@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
             <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
               <FileText className="w-6 h-6 text-blue-500" />
             </div>
-            <div className={`flex items-center gap-1 text-sm ${weekChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+            <div className={`flex items-center gap-1 text-sm ${weekChange >= 0 ? 'text-partrunner-yellow-accent' : 'text-red-500'}`}>
               {weekChange >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
               <span>{Math.abs(Number(weekChangePercent))}%</span>
             </div>
@@ -137,10 +137,10 @@ const Dashboard: React.FC = () => {
         {/* Total Amount */}
         <div className="bg-white rounded-xl border border-partrunner-gray-light p-6 shadow-card">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-emerald-500" />
+            <div className="w-12 h-12 bg-partrunner-yellow/10 rounded-xl flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-partrunner-yellow-accent" />
             </div>
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
+            <TrendingUp className="w-5 h-5 text-partrunner-yellow-accent" />
           </div>
           <p className="text-partrunner-gray-dark text-sm mb-1">Monto Total</p>
           <p className="text-2xl font-bold text-partrunner-black">{formatCurrency(stats?.totalAmount || 0)}</p>
@@ -302,7 +302,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-partrunner-gray-dark">Ingresos por Pronto Pago (fees)</span>
-              <span className="text-emerald-500 font-semibold">
+              <span className="text-partrunner-yellow-accent font-semibold">
                 {formatCurrency(stats?.prontoPagoFees || 0)}
               </span>
             </div>

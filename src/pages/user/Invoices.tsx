@@ -56,7 +56,7 @@ const UserInvoices: React.FC = () => {
       pending_review: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'En revisión' },
       approved: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Aprobada' },
       pending_payment: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Por pagar' },
-      paid: { bg: 'bg-green-100', text: 'text-green-700', label: 'Pagada' },
+      paid: { bg: 'bg-partrunner-yellow/20', text: 'text-partrunner-yellow-accent', label: 'Pagada' },
       rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rechazada' },
     };
 
@@ -107,7 +107,7 @@ const UserInvoices: React.FC = () => {
           </div>
           <div className="bg-white rounded-xl border border-partrunner-gray-light p-4">
             <p className="text-gray-500 text-sm">Total Facturado</p>
-            <p className="text-xl font-bold text-green-600">
+            <p className="text-xl font-bold text-partrunner-yellow-accent">
               {formatCurrency(data.summary.total_facturado)}
             </p>
           </div>

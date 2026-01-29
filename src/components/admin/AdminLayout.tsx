@@ -84,7 +84,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <Link to="/admin/dashboard" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden">
               <img 
-                src="/images/icon-color.png"
+                src="/images/icon-black.png"
                 alt="Partrunner"
                 className="w-8 h-8 object-contain"
               />

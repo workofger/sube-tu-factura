@@ -106,7 +106,7 @@ const Invoices: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       pending_review: 'bg-amber-100 text-amber-700 border-amber-200',
-      approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      approved: 'bg-partrunner-yellow/20 text-partrunner-yellow-accent border-partrunner-yellow/30',
       rejected: 'bg-red-100 text-red-700 border-red-200',
       paid: 'bg-blue-100 text-blue-700 border-blue-200',
     };
@@ -354,7 +354,7 @@ const Invoices: React.FC = () => {
                           {formatCurrency(invoice.total_amount)}
                         </p>
                         {invoice.payment_program === 'pronto_pago' && invoice.net_payment_amount && (
-                          <p className="text-emerald-500 text-xs">
+                          <p className="text-partrunner-yellow-accent text-xs">
                             Neto: {formatCurrency(invoice.net_payment_amount)}
                           </p>
                         )}
@@ -518,7 +518,7 @@ const Invoices: React.FC = () => {
                       </div>
                       <div className="flex justify-between pt-3 border-t border-partrunner-gray-light">
                         <span className="text-partrunner-black font-medium">Monto Neto a Pagar</span>
-                        <span className="text-emerald-500 font-bold">{formatCurrency(selectedInvoice.net_payment_amount || selectedInvoice.total_amount)}</span>
+                        <span className="text-partrunner-yellow-accent font-bold">{formatCurrency(selectedInvoice.net_payment_amount || selectedInvoice.total_amount)}</span>
                       </div>
                     </>
                   )}

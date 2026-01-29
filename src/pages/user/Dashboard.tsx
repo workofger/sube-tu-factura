@@ -48,7 +48,7 @@ const UserDashboard: React.FC = () => {
       pending_review: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'En revisión' },
       approved: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Aprobada' },
       pending_payment: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Por pagar' },
-      paid: { bg: 'bg-green-100', text: 'text-green-700', label: 'Pagada' },
+      paid: { bg: 'bg-partrunner-yellow/20', text: 'text-partrunner-yellow-accent', label: 'Pagada' },
       rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rechazada' },
     };
 
@@ -80,10 +80,10 @@ const UserDashboard: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-2xl border border-partrunner-gray-light p-5">
               <div className="flex items-center justify-between mb-3">
-                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 bg-partrunner-yellow/20 rounded-xl flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-partrunner-yellow-accent" />
                 </div>
-                <TrendingUp className="w-5 h-5 text-green-500" />
+                <TrendingUp className="w-5 h-5 text-partrunner-yellow-accent" />
               </div>
               <p className="text-gray-500 text-sm mb-1">Total Facturado</p>
               <p className="text-2xl font-bold text-partrunner-black">
@@ -177,16 +177,16 @@ const UserDashboard: React.FC = () => {
                 </div>
               </Link>
             ) : (
-              <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
+              <div className="bg-partrunner-yellow/10 border border-partrunner-yellow/30 rounded-2xl p-5">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-200 rounded-xl flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-green-700" />
+                  <div className="w-12 h-12 bg-partrunner-yellow/30 rounded-xl flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-partrunner-yellow-accent" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-green-800 font-semibold mb-1">
+                    <h3 className="text-partrunner-black font-semibold mb-1">
                       Información bancaria completa
                     </h3>
-                    <p className="text-green-700/70 text-sm">
+                    <p className="text-partrunner-black/70 text-sm">
                       Tu cuenta está lista para recibir pagos
                     </p>
                   </div>

@@ -34,12 +34,12 @@ const alertConfig = {
   },
   success: {
     icon: CheckCircle,
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    iconColor: 'text-green-500',
-    titleColor: 'text-green-800',
-    messageColor: 'text-green-700',
-    buttonBg: 'bg-green-600 hover:bg-green-700',
+    bg: 'bg-partrunner-yellow/10',
+    border: 'border-partrunner-yellow/30',
+    iconColor: 'text-partrunner-yellow-accent',
+    titleColor: 'text-partrunner-black',
+    messageColor: 'text-partrunner-black/80',
+    buttonBg: 'bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black',
   },
   info: {
     icon: Info,

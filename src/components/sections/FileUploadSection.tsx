@@ -73,7 +73,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               <span className="font-semibold">Leyendo factura y completando formulario...</span>
             </div>
           ) : extractSuccess ? (
-            <div className="flex items-center gap-3 text-green-600 bg-green-50 px-5 py-3 rounded-xl border border-green-200 text-sm">
+            <div className="flex items-center gap-3 text-partrunner-yellow-accent bg-partrunner-yellow/10 px-5 py-3 rounded-xl border border-partrunner-yellow/30 text-sm">
               <CheckCircle size={18} />
               <span className="font-semibold">¡Datos extraídos! Verifica la información abajo.</span>
             </div>

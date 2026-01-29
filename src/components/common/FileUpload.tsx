@@ -87,7 +87,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             relative flex flex-col items-center justify-center w-full min-h-[140px] p-6 
             border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 
             ${file 
-              ? 'border-green-400 bg-green-50' 
+              ? 'border-partrunner-yellow bg-partrunner-yellow/10' 
               : isDragging
                 ? 'border-partrunner-yellow bg-partrunner-yellow/5 scale-[1.02]'
                 : 'border-gray-200 hover:border-partrunner-yellow/50 bg-gray-50 hover:bg-white'
@@ -97,7 +97,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           {/* Success indicator */}
           {file && (
             <div className="absolute top-3 right-3">
-              <CheckCircle className="w-5 h-5 text-green-500" />
+              <CheckCircle className="w-5 h-5 text-partrunner-yellow-accent" />
             </div>
           )}
 
@@ -113,10 +113,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           {/* Text */}
           {file ? (
             <div className="text-center">
-              <p className="text-green-700 font-semibold truncate max-w-[200px]">
+              <p className="text-partrunner-black font-semibold truncate max-w-[200px]">
                 {file.name}
               </p>
-              <p className="text-green-600/70 text-sm mt-1">
+              <p className="text-partrunner-gray-dark text-sm mt-1">
                 {formatFileSize(file.size)}
               </p>
             </div>
