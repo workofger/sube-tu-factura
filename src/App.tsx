@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 // Contexts
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { UserAuthProvider } from './contexts/UserAuthContext';
+import { SystemConfigProvider } from './contexts/SystemConfigContext';
 
 // Admin Pages
 import UploadPage from './pages/Upload';
@@ -18,8 +19,9 @@ import UserProtectedRoute from './components/user/UserProtectedRoute';
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <Routes>
+    <SystemConfigProvider>
+      <BrowserRouter>
+        <Routes>
         {/* Public Upload Page */}
         <Route path="/" element={<UploadPage />} />
         
@@ -141,8 +143,9 @@ const App: React.FC = () => {
 
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </SystemConfigProvider>
   );
 };
 

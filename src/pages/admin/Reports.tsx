@@ -70,7 +70,7 @@ const Reports: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white mb-2">Reportes</h1>
-        <p className="text-slate-400">
+        <p className="text-gray-400">
           Exporta los datos de facturas en formato CSV
         </p>
       </div>
@@ -78,14 +78,14 @@ const Reports: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Export Form */}
         <div className="lg:col-span-2">
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <div className="bg-partrunner-charcoal/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+              <div className="w-10 h-10 bg-partrunner-yellow/20 rounded-xl flex items-center justify-center">
+                <FileSpreadsheet className="w-5 h-5 text-partrunner-yellow-accent" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-white">Exportar Facturas</h2>
-                <p className="text-slate-400 text-sm">Selecciona los filtros y descarga el reporte</p>
+                <p className="text-gray-400 text-sm">Selecciona los filtros y descarga el reporte</p>
               </div>
             </div>
 
@@ -93,17 +93,17 @@ const Reports: React.FC = () => {
             <div className="space-y-6">
               {/* Period Selection */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-3">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
                   <Calendar className="w-4 h-4 inline mr-2" />
                   Período
                 </label>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Año</label>
+                    <label className="block text-xs text-gray-500 mb-1">Año</label>
                     <select
                       value={filters.year}
                       onChange={(e) => setFilters(prev => ({ ...prev, year: parseInt(e.target.value, 10) }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-full px-4 py-3 bg-partrunner-black/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50"
                     >
                       {yearOptions.map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -111,11 +111,11 @@ const Reports: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Semana Desde</label>
+                    <label className="block text-xs text-gray-500 mb-1">Semana Desde</label>
                     <select
                       value={filters.weekFrom}
                       onChange={(e) => setFilters(prev => ({ ...prev, weekFrom: parseInt(e.target.value, 10) }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-full px-4 py-3 bg-partrunner-black/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50"
                     >
                       {weekOptions.map(week => (
                         <option key={week} value={week}>Semana {week}</option>
@@ -123,11 +123,11 @@ const Reports: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Semana Hasta</label>
+                    <label className="block text-xs text-gray-500 mb-1">Semana Hasta</label>
                     <select
                       value={filters.weekTo}
                       onChange={(e) => setFilters(prev => ({ ...prev, weekTo: parseInt(e.target.value, 10) }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-full px-4 py-3 bg-partrunner-black/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50"
                     >
                       {weekOptions.map(week => (
                         <option key={week} value={week}>Semana {week}</option>
@@ -139,7 +139,7 @@ const Reports: React.FC = () => {
 
               {/* Payment Program */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-3">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
                   Programa de Pago
                 </label>
                 <div className="grid grid-cols-3 gap-3">
@@ -148,8 +148,8 @@ const Reports: React.FC = () => {
                     onClick={() => setFilters(prev => ({ ...prev, paymentProgram: '' }))}
                     className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                       !filters.paymentProgram
-                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
-                        : 'bg-slate-900/50 border-slate-600/50 text-slate-400 hover:text-white'
+                        ? 'bg-partrunner-yellow/20 border-partrunner-yellow/50 text-partrunner-yellow-accent'
+                        : 'bg-partrunner-black/50 border-gray-600/50 text-gray-400 hover:text-white'
                     }`}
                   >
                     <FileText className="w-4 h-4" />
@@ -161,7 +161,7 @@ const Reports: React.FC = () => {
                     className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                       filters.paymentProgram === 'pronto_pago'
                         ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                        : 'bg-slate-900/50 border-slate-600/50 text-slate-400 hover:text-white'
+                        : 'bg-partrunner-black/50 border-gray-600/50 text-gray-400 hover:text-white'
                     }`}
                   >
                     <Zap className="w-4 h-4" />
@@ -173,7 +173,7 @@ const Reports: React.FC = () => {
                     className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                       filters.paymentProgram === 'standard'
                         ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-                        : 'bg-slate-900/50 border-slate-600/50 text-slate-400 hover:text-white'
+                        : 'bg-partrunner-black/50 border-gray-600/50 text-gray-400 hover:text-white'
                     }`}
                   >
                     <Clock className="w-4 h-4" />
@@ -186,15 +186,15 @@ const Reports: React.FC = () => {
               {exportResult && (
                 <div className={`p-4 rounded-xl flex items-center gap-3 ${
                   exportResult.success 
-                    ? 'bg-emerald-500/10 border border-emerald-500/30' 
+                    ? 'bg-partrunner-green/10 border border-partrunner-green/30' 
                     : 'bg-red-500/10 border border-red-500/30'
                 }`}>
                   {exportResult.success ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                    <CheckCircle className="w-5 h-5 text-partrunner-green" />
                   ) : (
                     <XCircle className="w-5 h-5 text-red-400" />
                   )}
-                  <span className={exportResult.success ? 'text-emerald-300' : 'text-red-300'}>
+                  <span className={exportResult.success ? 'text-partrunner-green' : 'text-red-300'}>
                     {exportResult.message}
                   </span>
                 </div>
@@ -204,7 +204,7 @@ const Reports: React.FC = () => {
               <button
                 onClick={handleExport}
                 disabled={isExporting}
-                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full py-4 bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black font-semibold rounded-xl shadow-lg shadow-partrunner-yellow/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {isExporting ? (
                   <>
@@ -225,9 +225,9 @@ const Reports: React.FC = () => {
         {/* Info Sidebar */}
         <div className="space-y-6">
           {/* CSV Format Info */}
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <div className="bg-partrunner-charcoal/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Formato del Reporte</h3>
-            <p className="text-slate-400 text-sm mb-4">
+            <p className="text-gray-400 text-sm mb-4">
               El archivo CSV incluye las siguientes columnas:
             </p>
             <ul className="space-y-2 text-sm">
@@ -247,8 +247,8 @@ const Reports: React.FC = () => {
                 'Estado',
                 'Fecha Registro',
               ].map((col, idx) => (
-                <li key={idx} className="flex items-center gap-2 text-slate-300">
-                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                <li key={idx} className="flex items-center gap-2 text-gray-300">
+                  <span className="w-1.5 h-1.5 bg-partrunner-yellow-accent rounded-full" />
                   {col}
                 </li>
               ))}
@@ -256,9 +256,9 @@ const Reports: React.FC = () => {
           </div>
 
           {/* Tips */}
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6">
-            <h3 className="text-amber-300 font-semibold mb-3">💡 Tip</h3>
-            <p className="text-amber-200/70 text-sm">
+          <div className="bg-partrunner-yellow/10 border border-partrunner-yellow/30 rounded-2xl p-6">
+            <h3 className="text-partrunner-yellow-accent font-semibold mb-3">💡 Tip</h3>
+            <p className="text-partrunner-yellow-accent/70 text-sm">
               El archivo CSV está optimizado para Excel con codificación UTF-8 BOM. 
               Puedes abrirlo directamente o importarlo en Google Sheets.
             </p>
@@ -269,31 +269,31 @@ const Reports: React.FC = () => {
       {/* Payment Export Section */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <div className="bg-partrunner-charcoal/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
                 <Banknote className="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-white">Archivo de Pagos (XLSX)</h2>
-                <p className="text-slate-400 text-sm">Formato Shinkansen/BBVA para transferencias bancarias</p>
+                <p className="text-gray-400 text-sm">Formato Shinkansen/BBVA para transferencias bancarias</p>
               </div>
             </div>
 
             {/* Payment Filters */}
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-3">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
                   <Calendar className="w-4 h-4 inline mr-2" />
                   Semana de Pago
                 </label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Año</label>
+                    <label className="block text-xs text-gray-500 mb-1">Año</label>
                     <select
                       value={paymentFilters.year}
                       onChange={(e) => setPaymentFilters(prev => ({ ...prev, year: parseInt(e.target.value, 10) }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full px-4 py-3 bg-partrunner-black/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                       {[currentYear - 1, currentYear, currentYear + 1].map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -301,11 +301,11 @@ const Reports: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Semana</label>
+                    <label className="block text-xs text-gray-500 mb-1">Semana</label>
                     <select
                       value={paymentFilters.week}
                       onChange={(e) => setPaymentFilters(prev => ({ ...prev, week: parseInt(e.target.value, 10) }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full px-4 py-3 bg-partrunner-black/50 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                       {Array.from({ length: 53 }, (_, i) => i + 1).map(week => (
                         <option key={week} value={week}>Semana {week}</option>
@@ -319,15 +319,15 @@ const Reports: React.FC = () => {
               {paymentExportResult && (
                 <div className={`p-4 rounded-xl flex items-center gap-3 ${
                   paymentExportResult.success 
-                    ? 'bg-emerald-500/10 border border-emerald-500/30' 
+                    ? 'bg-partrunner-green/10 border border-partrunner-green/30' 
                     : 'bg-red-500/10 border border-red-500/30'
                 }`}>
                   {paymentExportResult.success ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                    <CheckCircle className="w-5 h-5 text-partrunner-green" />
                   ) : (
                     <XCircle className="w-5 h-5 text-red-400" />
                   )}
-                  <span className={paymentExportResult.success ? 'text-emerald-300' : 'text-red-300'}>
+                  <span className={paymentExportResult.success ? 'text-partrunner-green' : 'text-red-300'}>
                     {paymentExportResult.message}
                   </span>
                 </div>
@@ -357,9 +357,9 @@ const Reports: React.FC = () => {
 
         {/* XLSX Format Info */}
         <div className="space-y-6">
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+          <div className="bg-partrunner-charcoal/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Formato XLSX</h3>
-            <p className="text-slate-400 text-sm mb-4">
+            <p className="text-gray-400 text-sm mb-4">
               Archivo compatible con Shinkansen/BBVA:
             </p>
             <ul className="space-y-2 text-sm">
@@ -374,7 +374,7 @@ const Reports: React.FC = () => {
                 'Descripción',
                 'Cuenta origen',
               ].map((col, idx) => (
-                <li key={idx} className="flex items-center gap-2 text-slate-300">
+                <li key={idx} className="flex items-center gap-2 text-gray-300">
                   <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
                   {col}
                 </li>

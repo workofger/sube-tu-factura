@@ -5,6 +5,7 @@ import { Loader2, Send, HelpCircle, Check, AlertTriangle, ChevronDown } from 'lu
 import { useInvoiceForm } from '../hooks/useInvoiceForm';
 import { useInvoiceExtraction, ValidationAlert } from '../hooks/useInvoiceExtraction';
 import { useProjects } from '../hooks/useProjects';
+import { useSystemConfig } from '../contexts/SystemConfigContext';
 
 // Services
 import { submitInvoice, validateFormData } from '../services/webhookService';
@@ -62,6 +63,7 @@ const UploadPage: React.FC = () => {
   const [filenameError, setFilenameError] = useState<string | null>(null);
 
   // Hooks
+  const { prontoPagoEnabled } = useSystemConfig();
   const { projects, loading: projectsLoading } = useProjects();
   const { 
     formData, 
@@ -139,6 +141,13 @@ const UploadPage: React.FC = () => {
       handleExtraction();
     }
   }, [formData.xmlFile, formData.pdfFile, isExtracting, isValidating, filenameError, extractError, extractSuccess, handleExtraction, canAttemptExtraction]);
+
+  // Force standard payment program when pronto pago is disabled
+  useEffect(() => {
+    if (!prontoPagoEnabled && formData.paymentProgram !== 'standard') {
+      setPaymentProgram('standard');
+    }
+  }, [prontoPagoEnabled, formData.paymentProgram, setPaymentProgram]);
 
   // Calculate payment week automatically after extraction success
   useEffect(() => {
@@ -293,7 +302,8 @@ const UploadPage: React.FC = () => {
                     itemsTotal={itemsTotal}
                   />
 
-                  {/* Section 5: Payment Program Selection */}
+                  {/* Section 5: Payment Program Selection - Only if Pronto Pago is enabled */}
+                  {prontoPagoEnabled && (
                   <PaymentProgramSelector
                     selectedProgram={formData.paymentProgram}
                     onProgramChange={setPaymentProgram}
@@ -301,6 +311,7 @@ const UploadPage: React.FC = () => {
                     prontoPagoPreview={prontoPagoPreview}
                     disabled={!extractSuccess}
                   />
+                  )}
 
                   {/* Section 6: Contact Information */}
                   <ContactSection

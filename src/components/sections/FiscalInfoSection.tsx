@@ -127,15 +127,16 @@ export const FiscalInfoSection: React.FC<FiscalInfoSectionProps> = ({
         <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide flex items-center gap-2">
           <FolderKanban size={14} />
           Proyecto
+          {readOnly && <Lock size={12} className="text-gray-400 ml-1" />}
         </h4>
         <SelectField
           label="Proyecto asignado"
           options={projectOptions}
           value={formData.project}
           onChange={(e) => onFieldChange('project', e.target.value as ProjectType)}
-          disabled={projectsLoading}
+          disabled={projectsLoading || readOnly}
         />
-        {formData.needsProjectReview && (
+        {formData.needsProjectReview && !readOnly && (
           <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-sm border border-amber-200">
             <AlertCircle size={16} />
             <span>El proyecto requiere revisión manual</span>
