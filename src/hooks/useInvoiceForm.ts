@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { InvoiceData, InvoiceItem, ProjectType, PaymentProgram, PRONTO_PAGO_FEE_RATE, LateInvoiceReason } from '../types/invoice';
+import { InvoiceData, InvoiceItem, ProjectType, PaymentProgram, PRONTO_PAGO_FEE_RATE, LateInvoiceReason, CreditNoteData, CreditNoteValidation } from '../types/invoice';
 
 const initialFormData: InvoiceData = {
   week: '',
@@ -51,6 +51,11 @@ const initialFormData: InvoiceData = {
   phoneNumber: '',
   xmlFile: null,
   pdfFile: null,
+  // Credit note fields (for Pronto Pago)
+  creditNoteXmlFile: null,
+  creditNotePdfFile: null,
+  creditNoteData: null,
+  creditNoteValidation: null,
 };
 
 export const useInvoiceForm = () => {
@@ -187,6 +192,53 @@ export const useInvoiceForm = () => {
     (formData.retentionIsrRate && formData.retentionIsrRate > 0)
   );
 
+  // Credit note handlers
+  const setCreditNoteXmlFile = useCallback((file: File | null) => {
+    setFormData(prev => ({
+      ...prev,
+      creditNoteXmlFile: file,
+      // Reset validation when file changes
+      creditNoteValidation: file ? prev.creditNoteValidation : null,
+      creditNoteData: file ? prev.creditNoteData : null,
+    }));
+  }, []);
+
+  const setCreditNotePdfFile = useCallback((file: File | null) => {
+    setFormData(prev => ({
+      ...prev,
+      creditNotePdfFile: file,
+    }));
+  }, []);
+
+  const setCreditNoteValidation = useCallback((
+    validation: CreditNoteValidation | null, 
+    data: CreditNoteData | null
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      creditNoteValidation: validation,
+      creditNoteData: data,
+    }));
+  }, []);
+
+  // Clear credit note when switching away from pronto_pago
+  const clearCreditNote = useCallback(() => {
+    setFormData(prev => ({
+      ...prev,
+      creditNoteXmlFile: null,
+      creditNotePdfFile: null,
+      creditNoteData: null,
+      creditNoteValidation: null,
+    }));
+  }, []);
+
+  // Check if credit note is required and valid
+  const creditNoteRequired = formData.paymentProgram === 'pronto_pago';
+  const creditNoteValid = formData.creditNoteValidation?.isValid ?? false;
+  const creditNoteComplete = creditNoteRequired 
+    ? (formData.creditNoteXmlFile && formData.creditNotePdfFile && creditNoteValid)
+    : true;
+
   return {
     formData,
     setFormData,
@@ -210,5 +262,13 @@ export const useInvoiceForm = () => {
     setLateInvoiceInfo,
     acknowledgeLateInvoice,
     setWeekFromDescription,
+    // Credit note (for Pronto Pago)
+    setCreditNoteXmlFile,
+    setCreditNotePdfFile,
+    setCreditNoteValidation,
+    clearCreditNote,
+    creditNoteRequired,
+    creditNoteValid,
+    creditNoteComplete,
   };
 };

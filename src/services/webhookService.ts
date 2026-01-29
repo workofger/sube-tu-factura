@@ -32,6 +32,28 @@ export const buildWebhookPayload = async (formData: InvoiceData): Promise<Webhoo
     };
   }
 
+  // Convert credit note files to Base64 (for Pronto Pago)
+  let creditNoteXmlData = null;
+  let creditNotePdfData = null;
+
+  if (formData.creditNoteXmlFile) {
+    const creditNoteXmlBase64 = await fileToBase64(formData.creditNoteXmlFile);
+    creditNoteXmlData = {
+      name: formData.creditNoteXmlFile.name,
+      content: creditNoteXmlBase64,
+      mimeType: formData.creditNoteXmlFile.type || 'application/xml',
+    };
+  }
+
+  if (formData.creditNotePdfFile) {
+    const creditNotePdfBase64 = await fileToBase64(formData.creditNotePdfFile);
+    creditNotePdfData = {
+      name: formData.creditNotePdfFile.name,
+      content: creditNotePdfBase64,
+      mimeType: formData.creditNotePdfFile.type || 'application/pdf',
+    };
+  }
+
   // Build full email
   const fullEmail = formData.emailUser 
     ? `${formData.emailUser}${formData.emailDomain}` 
@@ -120,6 +142,27 @@ export const buildWebhookPayload = async (formData: InvoiceData): Promise<Webhoo
       xml: xmlFileData,
       pdf: pdfFileData,
     },
+
+    // Credit Note (required for Pronto Pago)
+    creditNote: formData.paymentProgram === 'pronto_pago' && formData.creditNoteData ? {
+      uuid: formData.creditNoteData.uuid,
+      folio: formData.creditNoteData.folio,
+      series: formData.creditNoteData.series,
+      relatedUuid: formData.creditNoteData.relatedUuid,
+      tipoRelacion: formData.creditNoteData.tipoRelacion,
+      issuerRfc: formData.creditNoteData.issuerRfc,
+      issuerName: formData.creditNoteData.issuerName,
+      subtotal: formData.creditNoteData.subtotal,
+      totalTax: formData.creditNoteData.totalTax,
+      totalAmount: formData.creditNoteData.totalAmount,
+      currency: formData.creditNoteData.currency,
+      issueDate: formData.creditNoteData.issueDate,
+      certificationDate: formData.creditNoteData.certificationDate,
+      files: {
+        xml: creditNoteXmlData,
+        pdf: creditNotePdfData,
+      },
+    } : undefined,
   };
 
   return payload;

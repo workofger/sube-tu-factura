@@ -24,6 +24,31 @@ export interface ProntoPagoPreview {
   netAmount: number;
 }
 
+// Credit Note data (CFDI tipo E - Egreso)
+export interface CreditNoteData {
+  uuid: string;
+  folio?: string;
+  series?: string;
+  issuerRfc: string;
+  issuerName?: string;
+  relatedUuid: string; // UUID del CFDI relacionado (factura principal)
+  tipoRelacion: string; // Typically "01" for credit notes
+  subtotal: number;
+  totalTax: number;
+  totalAmount: number;
+  currency: string;
+  issueDate: string;
+  certificationDate?: string;
+  tipoComprobante: string; // Should be "E" for Egreso
+}
+
+// Credit Note validation result
+export interface CreditNoteValidation {
+  isValid: boolean;
+  errors: string[];
+  data?: CreditNoteData;
+}
+
 export interface InvoiceData {
   // Selection fields
   week: string;  // The current week number (for filing)
@@ -92,6 +117,12 @@ export interface InvoiceData {
   // Files
   xmlFile: File | null;
   pdfFile: File | null;
+  
+  // Credit Note files (required for Pronto Pago)
+  creditNoteXmlFile: File | null;
+  creditNotePdfFile: File | null;
+  creditNoteData: CreditNoteData | null;
+  creditNoteValidation: CreditNoteValidation | null;
 }
 
 export enum ProjectType {
@@ -243,5 +274,34 @@ export interface WebhookPayload {
       content: string; // Base64
       mimeType: string;
     } | null;
+  };
+  
+  // Credit Note (required for Pronto Pago)
+  creditNote?: {
+    uuid: string;
+    folio?: string;
+    series?: string;
+    relatedUuid: string;
+    tipoRelacion: string;
+    issuerRfc: string;
+    issuerName?: string;
+    subtotal: number;
+    totalTax: number;
+    totalAmount: number;
+    currency: string;
+    issueDate: string;
+    certificationDate?: string;
+    files: {
+      xml: {
+        name: string;
+        content: string; // Base64
+        mimeType: string;
+      } | null;
+      pdf: {
+        name: string;
+        content: string; // Base64
+        mimeType: string;
+      } | null;
+    };
   };
 }

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Zap, Clock, DollarSign, Info, ArrowRight } from 'lucide-react';
-import { PaymentProgram, PRONTO_PAGO_FEE_RATE, ProntoPagoPreview } from '../../types/invoice';
+import { PaymentProgram, PRONTO_PAGO_FEE_RATE, ProntoPagoPreview, CreditNoteData, CreditNoteValidation } from '../../types/invoice';
 import { formatNumber } from '../../utils/formatters';
+import { CreditNoteUpload } from './CreditNoteUpload';
 
 interface PaymentProgramSelectorProps {
   selectedProgram: PaymentProgram;
@@ -9,6 +10,14 @@ interface PaymentProgramSelectorProps {
   totalAmount: number;
   prontoPagoPreview: ProntoPagoPreview | null;
   disabled?: boolean;
+  // Credit note props (required for pronto_pago)
+  invoiceUuid?: string;
+  invoiceIssuerRfc?: string;
+  creditNoteXmlFile?: File | null;
+  creditNotePdfFile?: File | null;
+  onCreditNoteXmlChange?: (file: File | null) => void;
+  onCreditNotePdfChange?: (file: File | null) => void;
+  onCreditNoteValidationChange?: (validation: CreditNoteValidation | null, data: CreditNoteData | null) => void;
 }
 
 export const PaymentProgramSelector: React.FC<PaymentProgramSelectorProps> = ({
@@ -17,8 +26,17 @@ export const PaymentProgramSelector: React.FC<PaymentProgramSelectorProps> = ({
   totalAmount,
   prontoPagoPreview,
   disabled = false,
+  // Credit note props
+  invoiceUuid = '',
+  invoiceIssuerRfc = '',
+  creditNoteXmlFile = null,
+  creditNotePdfFile = null,
+  onCreditNoteXmlChange,
+  onCreditNotePdfChange,
+  onCreditNoteValidationChange,
 }) => {
   const feePercentage = (PRONTO_PAGO_FEE_RATE * 100).toFixed(0);
+  const expectedFeeAmount = prontoPagoPreview?.feeAmount || 0;
 
   return (
     <div className="space-y-5">
@@ -170,6 +188,20 @@ export const PaymentProgramSelector: React.FC<PaymentProgramSelectorProps> = ({
           )}
         </button>
       </div>
+
+      {/* Credit Note Upload - Only shown when Pronto Pago is selected */}
+      {selectedProgram === 'pronto_pago' && onCreditNoteXmlChange && onCreditNotePdfChange && onCreditNoteValidationChange && (
+        <CreditNoteUpload
+          xmlFile={creditNoteXmlFile}
+          pdfFile={creditNotePdfFile}
+          onXmlChange={onCreditNoteXmlChange}
+          onPdfChange={onCreditNotePdfChange}
+          invoiceUuid={invoiceUuid}
+          invoiceIssuerRfc={invoiceIssuerRfc}
+          expectedFeeAmount={expectedFeeAmount}
+          onValidationChange={onCreditNoteValidationChange}
+        />
+      )}
     </div>
   );
 };

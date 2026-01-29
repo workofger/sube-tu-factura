@@ -81,6 +81,13 @@ const UploadPage: React.FC = () => {
     prontoPagoPreview,
     setLateInvoiceInfo,
     acknowledgeLateInvoice,
+    // Credit note handlers
+    setCreditNoteXmlFile,
+    setCreditNotePdfFile,
+    setCreditNoteValidation,
+    clearCreditNote,
+    creditNoteRequired,
+    creditNoteComplete,
   } = useInvoiceForm();
 
   // Handle validation alerts from extraction
@@ -146,8 +153,16 @@ const UploadPage: React.FC = () => {
   useEffect(() => {
     if (!prontoPagoEnabled && formData.paymentProgram !== 'standard') {
       setPaymentProgram('standard');
+      clearCreditNote();
     }
-  }, [prontoPagoEnabled, formData.paymentProgram, setPaymentProgram]);
+  }, [prontoPagoEnabled, formData.paymentProgram, setPaymentProgram, clearCreditNote]);
+
+  // Clear credit note when switching from pronto_pago to standard
+  useEffect(() => {
+    if (formData.paymentProgram === 'standard') {
+      clearCreditNote();
+    }
+  }, [formData.paymentProgram, clearCreditNote]);
 
   // Calculate payment week automatically after extraction success
   useEffect(() => {
@@ -201,6 +216,18 @@ const UploadPage: React.FC = () => {
       return;
     }
 
+    // Validate credit note for Pronto Pago
+    if (creditNoteRequired && !creditNoteComplete) {
+      setAlertModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Nota de Crédito requerida',
+        message: 'Para Pronto Pago debes adjuntar una nota de crédito válida.',
+        details: formData.creditNoteValidation?.errors?.join('\n') || 'Sube el XML y PDF de la nota de crédito.',
+      });
+      return;
+    }
+
     if (formData.isLate && !formData.lateAcknowledged) {
       setLateInvoiceModal({
         isOpen: true,
@@ -244,7 +271,7 @@ const UploadPage: React.FC = () => {
     }
   };
 
-  const canSubmit = isConfirmed && !isSubmitting && (!formData.isLate || formData.lateAcknowledged);
+  const canSubmit = isConfirmed && !isSubmitting && (!formData.isLate || formData.lateAcknowledged) && (!creditNoteRequired || creditNoteComplete);
 
   // Determine if form should be shown (after successful extraction)
   const showForm = extractSuccess;
@@ -310,6 +337,14 @@ const UploadPage: React.FC = () => {
                     totalAmount={parseFloat(formData.totalAmount) || 0}
                     prontoPagoPreview={prontoPagoPreview}
                     disabled={!extractSuccess}
+                    // Credit note props
+                    invoiceUuid={formData.uuid}
+                    invoiceIssuerRfc={formData.issuerRfc}
+                    creditNoteXmlFile={formData.creditNoteXmlFile}
+                    creditNotePdfFile={formData.creditNotePdfFile}
+                    onCreditNoteXmlChange={setCreditNoteXmlFile}
+                    onCreditNotePdfChange={setCreditNotePdfFile}
+                    onCreditNoteValidationChange={setCreditNoteValidation}
                   />
                   )}
 

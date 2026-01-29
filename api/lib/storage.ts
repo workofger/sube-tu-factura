@@ -130,6 +130,64 @@ export const uploadInvoiceToStorage = async (
 };
 
 /**
+ * Build the storage path for a credit note file
+ * Structure: year/week/project/rfc/uuid_NC.ext
+ */
+export const buildCreditNoteStoragePath = (
+  year: number,
+  week: number,
+  project: string,
+  issuerRfc: string,
+  creditNoteUuid: string,
+  fileType: 'xml' | 'pdf'
+): string => {
+  const sanitize = (str: string): string => {
+    return str.replace(/[^a-zA-Z0-9_-]/g, '_').toUpperCase();
+  };
+  
+  const weekStr = String(week).padStart(2, '0');
+  const projectStr = sanitize(project);
+  const rfcStr = sanitize(issuerRfc);
+  
+  return `${year}/S${weekStr}/${projectStr}/${rfcStr}/${creditNoteUuid}_NC.${fileType}`;
+};
+
+/**
+ * Upload credit note files to Supabase Storage
+ */
+export const uploadCreditNoteToStorage = async (
+  week: number,
+  year: number,
+  project: string,
+  issuerRfc: string,
+  creditNoteUuid: string,
+  xmlContent?: string | null,
+  pdfContent?: string | null
+): Promise<{
+  xmlFile?: { path: string; publicUrl: string };
+  pdfFile?: { path: string; publicUrl: string };
+}> => {
+  const result: {
+    xmlFile?: { path: string; publicUrl: string };
+    pdfFile?: { path: string; publicUrl: string };
+  } = {};
+  
+  // Upload XML
+  if (xmlContent) {
+    const xmlPath = buildCreditNoteStoragePath(year, week, project, issuerRfc, creditNoteUuid, 'xml');
+    result.xmlFile = await uploadToStorage(xmlPath, xmlContent, 'application/xml');
+  }
+  
+  // Upload PDF
+  if (pdfContent) {
+    const pdfPath = buildCreditNoteStoragePath(year, week, project, issuerRfc, creditNoteUuid, 'pdf');
+    result.pdfFile = await uploadToStorage(pdfPath, pdfContent, 'application/pdf');
+  }
+  
+  return result;
+};
+
+/**
  * Get a signed URL for private file access
  */
 export const getSignedUrl = async (

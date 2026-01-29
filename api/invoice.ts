@@ -6,10 +6,12 @@ import {
   insertInvoice, 
   insertInvoiceItems,
   saveFileRecord,
-  updateFileRecord
+  updateFileRecord,
+  insertCreditNote,
+  saveCreditNoteFileRecord
 } from './lib/supabase.js';
-import { uploadInvoiceToStorage } from './lib/storage.js';
-import { uploadInvoiceFiles } from './lib/googleDrive.js';
+import { uploadInvoiceToStorage, uploadCreditNoteToStorage } from './lib/storage.js';
+import { uploadInvoiceFiles, uploadCreditNoteFiles } from './lib/googleDrive.js';
 import { validateInvoicePayload } from './lib/validators.js';
 import { InvoicePayload, ApiResponse, InvoiceSuccessData } from './lib/types.js';
 import { applySecurityMiddleware } from './lib/rateLimit.js';
@@ -223,6 +225,110 @@ export default async function handler(
       console.log('⚠️ No file content received in payload');
     }
 
+    // ===== STEP 8: Process Credit Note (for Pronto Pago) =====
+    let creditNoteResult: {
+      id?: string;
+      uuid?: string;
+      files?: {
+        xml?: string;
+        pdf?: string;
+      };
+    } | undefined;
+
+    if (payload.paymentProgram?.program === 'pronto_pago' && payload.creditNote) {
+      console.log('📄 Processing credit note for Pronto Pago...');
+      
+      try {
+        // Insert credit note record
+        const creditNote = await insertCreditNote(invoice.id, payload.creditNote);
+        console.log('✅ Credit note inserted with ID:', creditNote.id);
+        
+        creditNoteResult = {
+          id: creditNote.id,
+          uuid: payload.creditNote.uuid,
+          files: {},
+        };
+        
+        const hasCreditNoteXml = payload.creditNote.files?.xml?.content;
+        const hasCreditNotePdf = payload.creditNote.files?.pdf?.content;
+        
+        if (hasCreditNoteXml || hasCreditNotePdf) {
+          // Upload credit note files to Supabase Storage
+          console.log('📤 Uploading credit note files to Supabase Storage...');
+          try {
+            const creditNoteStorageResult = await uploadCreditNoteToStorage(
+              payload.week,
+              invoiceYear,
+              payload.project,
+              payload.issuer.rfc,
+              payload.creditNote.uuid,
+              hasCreditNoteXml,
+              hasCreditNotePdf
+            );
+            
+            if (creditNoteStorageResult.xmlFile) {
+              await saveCreditNoteFileRecord(
+                invoice.id,
+                creditNote.id,
+                'credit_note_xml',
+                `${payload.creditNote.uuid}_NC.xml`,
+                creditNoteStorageResult.xmlFile.publicUrl,
+                creditNoteStorageResult.xmlFile.path
+              );
+              creditNoteResult.files!.xml = creditNoteStorageResult.xmlFile.publicUrl;
+            }
+            
+            if (creditNoteStorageResult.pdfFile) {
+              await saveCreditNoteFileRecord(
+                invoice.id,
+                creditNote.id,
+                'credit_note_pdf',
+                `${payload.creditNote.uuid}_NC.pdf`,
+                creditNoteStorageResult.pdfFile.publicUrl,
+                creditNoteStorageResult.pdfFile.path
+              );
+              creditNoteResult.files!.pdf = creditNoteStorageResult.pdfFile.publicUrl;
+            }
+            
+            console.log('✅ Credit note files uploaded to Supabase Storage');
+          } catch (cnStorageError) {
+            console.error('⚠️ Credit note storage error:', (cnStorageError as Error).message);
+          }
+          
+          // Upload credit note files to Google Drive
+          console.log('📤 Uploading credit note files to Google Drive...');
+          try {
+            const creditNoteDriveResult = await uploadCreditNoteFiles(
+              payload.week,
+              payload.year || invoiceYear,
+              payload.project,
+              payload.issuer.rfc,
+              payload.issuer.name,
+              payload.invoice.uuid, // Parent invoice UUID for folder
+              payload.creditNote.uuid,
+              hasCreditNoteXml,
+              hasCreditNotePdf,
+              payload.isLate || false
+            );
+            
+            if (creditNoteDriveResult.xmlFile) {
+              creditNoteResult.files!.xml = creditNoteDriveResult.xmlFile.webViewLink;
+            }
+            if (creditNoteDriveResult.pdfFile) {
+              creditNoteResult.files!.pdf = creditNoteDriveResult.pdfFile.webViewLink;
+            }
+            
+            console.log('✅ Credit note files uploaded to Google Drive');
+          } catch (cnDriveError) {
+            console.warn('⚠️ Credit note Drive upload failed:', (cnDriveError as Error).message);
+          }
+        }
+      } catch (creditNoteError) {
+        console.error('⚠️ Credit note processing error:', (creditNoteError as Error).message);
+        // Don't fail the entire request if credit note fails
+      }
+    }
+
     // Build success response
     const responseData: InvoiceSuccessData = {
       invoiceId: invoice.id,
@@ -231,7 +337,8 @@ export default async function handler(
       files: {
         xml: driveResult?.xmlFile?.webViewLink || storageResult.xmlFile?.publicUrl,
         pdf: driveResult?.pdfFile?.webViewLink || storageResult.pdfFile?.publicUrl
-      }
+      },
+      creditNote: creditNoteResult,
     };
 
     console.log('🎉 Invoice processed successfully!');

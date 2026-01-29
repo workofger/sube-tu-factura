@@ -80,6 +80,27 @@ export interface FilesData {
   pdf?: FileData | null;
 }
 
+// Credit Note Data (CFDI tipo E - Egreso)
+export interface CreditNotePayload {
+  uuid: string;
+  folio?: string;
+  series?: string;
+  relatedUuid: string;
+  tipoRelacion: string;
+  issuerRfc: string;
+  issuerName?: string;
+  subtotal: number;
+  totalTax: number;
+  totalAmount: number;
+  currency: string;
+  issueDate: string;
+  certificationDate?: string;
+  files: {
+    xml?: FileData | null;
+    pdf?: FileData | null;
+  };
+}
+
 // Late invoice types
 export type LateInvoiceReason = 'after_deadline' | 'wrong_week';
 
@@ -103,6 +124,8 @@ export interface InvoicePayload {
   items: InvoiceItem[];
   contact: ContactData;
   files: FilesData;
+  // Credit note (required for pronto_pago)
+  creditNote?: CreditNotePayload;
 }
 
 // API Response Types
@@ -121,6 +144,14 @@ export interface InvoiceSuccessData {
   files: {
     xml?: string;
     pdf?: string;
+  };
+  creditNote?: {
+    id: string;
+    uuid: string;
+    files: {
+      xml?: string;
+      pdf?: string;
+    };
   };
 }
 

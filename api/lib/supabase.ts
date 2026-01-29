@@ -5,7 +5,8 @@ import {
   DbProject, 
   DbFlotillero,
   InvoicePayload,
-  InvoiceItem 
+  InvoiceItem,
+  CreditNotePayload
 } from './types.js';
 
 // Initialize Supabase client with Service Role Key
@@ -393,6 +394,97 @@ export const updateFileRecord = async (
   } else {
     console.log(`✅ File record updated with Drive URL`);
   }
+};
+
+/**
+ * Insert a credit note (CFDI tipo E) for Pronto Pago
+ */
+export const insertCreditNote = async (
+  invoiceId: string,
+  creditNote: CreditNotePayload
+): Promise<{ id: string }> => {
+  const client = getSupabaseClient();
+  
+  const creditNoteData = {
+    invoice_id: invoiceId,
+    uuid: creditNote.uuid,
+    folio: creditNote.folio || null,
+    series: creditNote.series || null,
+    related_uuid: creditNote.relatedUuid,
+    tipo_relacion: creditNote.tipoRelacion || '01',
+    issuer_rfc: creditNote.issuerRfc,
+    issuer_name: creditNote.issuerName || null,
+    subtotal: creditNote.subtotal || 0,
+    total_tax: creditNote.totalTax || 0,
+    total_amount: creditNote.totalAmount,
+    currency: creditNote.currency || 'MXN',
+    issue_date: creditNote.issueDate,
+    certification_date: creditNote.certificationDate || null,
+    is_valid: true,
+  };
+  
+  const { data, error } = await client
+    .from('credit_notes')
+    .insert(creditNoteData)
+    .select('id')
+    .single();
+  
+  if (error) {
+    // If table doesn't exist, log warning and return placeholder
+    if (error.code === '42P01') {
+      console.warn('⚠️ credit_notes table not found. Run migration 013_add_credit_notes.sql');
+      return { id: 'pending-migration' };
+    }
+    throw new Error(`Failed to insert credit note: ${error.message}`);
+  }
+  
+  return { id: data.id };
+};
+
+/**
+ * Save credit note file reference to database
+ */
+export const saveCreditNoteFileRecord = async (
+  invoiceId: string,
+  creditNoteId: string,
+  fileType: 'credit_note_xml' | 'credit_note_pdf',
+  fileName: string,
+  fileUrl: string,
+  filePath: string
+): Promise<void> => {
+  const client = getSupabaseClient();
+  
+  console.log(`📁 Saving credit note file record: ${fileType} for invoice ${invoiceId}`);
+  
+  const fileData: Record<string, unknown> = {
+    invoice_id: invoiceId,
+    file_type: fileType,
+    file_name: fileName,
+    file_path: fileUrl,
+  };
+  
+  // Try adding credit_note_id if column exists
+  const { error: insertError } = await client
+    .from('invoice_files')
+    .insert({ ...fileData, credit_note_id: creditNoteId });
+  
+  if (insertError) {
+    // If credit_note_id column doesn't exist, insert without it
+    if (insertError.message.includes('credit_note_id')) {
+      console.warn('⚠️ credit_note_id column not found, inserting without it');
+      const { error: fallbackError } = await client
+        .from('invoice_files')
+        .insert(fileData);
+      
+      if (fallbackError) {
+        throw new Error(`Failed to save credit note file record: ${fallbackError.message}`);
+      }
+    } else {
+      throw new Error(`Failed to save credit note file record: ${insertError.message}`);
+    }
+  }
+  
+  console.log(`✅ Credit note file record saved`);
 };
 
 /**

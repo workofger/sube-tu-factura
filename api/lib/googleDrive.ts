@@ -322,3 +322,65 @@ export const uploadInvoiceFiles = async (
   
   return result;
 };
+
+/**
+ * Upload credit note files (XML and PDF) to the same folder as the parent invoice
+ * Credit note files are named with _NC suffix (Nota de Crédito)
+ * @param isLate - If true, files are stored in Extemporaneas subfolder
+ */
+export const uploadCreditNoteFiles = async (
+  week: number,
+  year: number,
+  project: string,
+  issuerRfc: string,
+  issuerName: string,
+  invoiceUuid: string, // Parent invoice UUID (for folder context)
+  creditNoteUuid: string,
+  xmlContent?: string | null,
+  pdfContent?: string | null,
+  isLate: boolean = false
+): Promise<{
+  folderPath: string;
+  xmlFile?: { fileId: string; webViewLink: string };
+  pdfFile?: { fileId: string; webViewLink: string };
+}> => {
+  // Build folder structure (same as parent invoice)
+  const { folderId, folderPath } = await buildFolderStructure(
+    week,
+    year,
+    project,
+    issuerRfc,
+    issuerName,
+    isLate
+  );
+  
+  const result: {
+    folderPath: string;
+    xmlFile?: { fileId: string; webViewLink: string };
+    pdfFile?: { fileId: string; webViewLink: string };
+  } = { folderPath };
+  
+  // Upload XML if provided (with _NC suffix)
+  if (xmlContent) {
+    result.xmlFile = await uploadFile(
+      folderId,
+      `${creditNoteUuid}_NC.xml`,
+      xmlContent,
+      'application/xml'
+    );
+    console.log(`📄 Credit note XML uploaded: ${creditNoteUuid}_NC.xml`);
+  }
+  
+  // Upload PDF if provided (with _NC suffix)
+  if (pdfContent) {
+    result.pdfFile = await uploadFile(
+      folderId,
+      `${creditNoteUuid}_NC.pdf`,
+      pdfContent,
+      'application/pdf'
+    );
+    console.log(`📄 Credit note PDF uploaded: ${creditNoteUuid}_NC.pdf`);
+  }
+  
+  return result;
+};
