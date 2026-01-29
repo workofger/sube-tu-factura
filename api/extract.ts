@@ -13,8 +13,8 @@ interface ExtractionResult {
   project?: string;
   projectConfidence?: number; // 0.0 - 1.0
   needsProjectReview?: boolean;
-  rfc?: string;
-  billerName?: string;
+  issuerRfc?: string;
+  issuerName?: string;
   issuerRegime?: string;
   issuerZipCode?: string;
   receiverRfc?: string;
@@ -240,8 +240,8 @@ Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
       type: 'text',
       text: `Extrae todos los datos y devuelve un JSON con esta estructura exacta:
 {
-  "rfc": "RFC del emisor",
-  "billerName": "Nombre del emisor",
+  "issuerRfc": "RFC del emisor",
+  "issuerName": "Nombre del emisor",
   "issuerRegime": "Código y descripción del régimen fiscal",
   "issuerZipCode": "Código postal del emisor",
   "receiverRfc": "RFC del receptor",
@@ -317,8 +317,8 @@ Responde SOLO con un objeto JSON válido, sin markdown ni explicaciones.`;
     const weekConfidence = result.weekConfidence ?? 0;
     
     console.log('📋 Extraction complete:');
-    console.log('  - Emisor:', result.billerName);
-    console.log('  - RFC:', result.rfc);
+    console.log('  - Emisor:', result.issuerName);
+    console.log('  - RFC:', result.issuerRfc);
     console.log('  - UUID:', result.uuid);
     console.log('  - Fecha factura:', result.invoiceDate);
     console.log('  - Total:', result.totalAmount, result.currency);
