@@ -52,10 +52,10 @@ const Dashboard: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending_review: 'bg-yellow-500/20 text-yellow-300',
-      approved: 'bg-emerald-500/20 text-emerald-300',
-      rejected: 'bg-red-500/20 text-red-300',
-      paid: 'bg-blue-500/20 text-blue-300',
+      pending_review: 'bg-amber-100 text-amber-700 border-amber-200',
+      approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      rejected: 'bg-red-100 text-red-700 border-red-200',
+      paid: 'bg-blue-100 text-blue-700 border-blue-200',
     };
     const labels: Record<string, string> = {
       pending_review: 'Pendiente',
@@ -64,7 +64,7 @@ const Dashboard: React.FC = () => {
       paid: 'Pagada',
     };
     return (
-      <span className={`text-xs px-2 py-1 rounded-full ${styles[status] || 'bg-slate-500/20 text-slate-300'}`}>
+      <span className={`text-xs px-2 py-0.5 rounded-full border ${styles[status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
         {labels[status] || status}
       </span>
     );
@@ -74,7 +74,7 @@ const Dashboard: React.FC = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-partrunner-yellow-accent animate-spin" />
         </div>
       </AdminLayout>
     );
@@ -85,10 +85,10 @@ const Dashboard: React.FC = () => {
       <AdminLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
-            <p className="text-red-400 mb-4">{error}</p>
+            <p className="text-red-500 mb-4">{error}</p>
             <button 
               onClick={fetchDashboardData}
-              className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"
+              className="px-4 py-2 bg-partrunner-yellow text-partrunner-black font-medium rounded-lg hover:bg-partrunner-yellow-dark transition-colors"
             >
               Reintentar
             </button>
@@ -107,8 +107,8 @@ const Dashboard: React.FC = () => {
     <AdminLayout>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
-        <div className="flex items-center gap-2 text-slate-400">
+        <h1 className="text-2xl font-bold text-partrunner-black mb-2">Dashboard</h1>
+        <div className="flex items-center gap-2 text-partrunner-gray-dark">
           <Calendar className="w-4 h-4" />
           <span>Semana {stats?.currentWeek || '-'} - {format(new Date(), "MMMM yyyy", { locale: es })}</span>
         </div>
@@ -117,62 +117,62 @@ const Dashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Total Invoices */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+        <div className="bg-white rounded-xl border border-partrunner-gray-light p-6 shadow-card">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-              <FileText className="w-6 h-6 text-blue-400" />
+            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+              <FileText className="w-6 h-6 text-blue-500" />
             </div>
-            <div className={`flex items-center gap-1 text-sm ${weekChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className={`flex items-center gap-1 text-sm ${weekChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
               {weekChange >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
               <span>{Math.abs(Number(weekChangePercent))}%</span>
             </div>
           </div>
-          <p className="text-slate-400 text-sm mb-1">Total Facturas</p>
-          <p className="text-3xl font-bold text-white">{stats?.totalInvoices || 0}</p>
-          <p className="text-slate-500 text-xs mt-2">
+          <p className="text-partrunner-gray-dark text-sm mb-1">Total Facturas</p>
+          <p className="text-3xl font-bold text-partrunner-black">{stats?.totalInvoices || 0}</p>
+          <p className="text-partrunner-gray-dark/70 text-xs mt-2">
             {stats?.thisWeekInvoices || 0} esta semana
           </p>
         </div>
 
         {/* Total Amount */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+        <div className="bg-white rounded-xl border border-partrunner-gray-light p-6 shadow-card">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-emerald-400" />
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+              <DollarSign className="w-6 h-6 text-emerald-500" />
             </div>
-            <TrendingUp className="w-5 h-5 text-emerald-400" />
+            <TrendingUp className="w-5 h-5 text-emerald-500" />
           </div>
-          <p className="text-slate-400 text-sm mb-1">Monto Total</p>
-          <p className="text-2xl font-bold text-white">{formatCurrency(stats?.totalAmount || 0)}</p>
-          <p className="text-slate-500 text-xs mt-2">
+          <p className="text-partrunner-gray-dark text-sm mb-1">Monto Total</p>
+          <p className="text-2xl font-bold text-partrunner-black">{formatCurrency(stats?.totalAmount || 0)}</p>
+          <p className="text-partrunner-gray-dark/70 text-xs mt-2">
             Facturas procesadas
           </p>
         </div>
 
         {/* Pronto Pago */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+        <div className="bg-white rounded-xl border border-partrunner-gray-light p-6 shadow-card">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
-              <Zap className="w-6 h-6 text-amber-400" />
+            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+              <Zap className="w-6 h-6 text-amber-500" />
             </div>
           </div>
-          <p className="text-slate-400 text-sm mb-1">Pronto Pago</p>
-          <p className="text-3xl font-bold text-white">{stats?.totalProntoPago || 0}</p>
-          <p className="text-amber-400 text-xs mt-2">
+          <p className="text-partrunner-gray-dark text-sm mb-1">Pronto Pago</p>
+          <p className="text-3xl font-bold text-partrunner-black">{stats?.totalProntoPago || 0}</p>
+          <p className="text-partrunner-yellow-accent text-xs mt-2 font-medium">
             Fees: {formatCurrency(stats?.prontoPagoFees || 0)}
           </p>
         </div>
 
         {/* Standard */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+        <div className="bg-white rounded-xl border border-partrunner-gray-light p-6 shadow-card">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-slate-500/20 rounded-xl flex items-center justify-center">
-              <Clock className="w-6 h-6 text-slate-400" />
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <Clock className="w-6 h-6 text-gray-500" />
             </div>
           </div>
-          <p className="text-slate-400 text-sm mb-1">Pago Estándar</p>
-          <p className="text-3xl font-bold text-white">{stats?.totalStandard || 0}</p>
-          <p className="text-slate-500 text-xs mt-2">
+          <p className="text-partrunner-gray-dark text-sm mb-1">Pago Estándar</p>
+          <p className="text-3xl font-bold text-partrunner-black">{stats?.totalStandard || 0}</p>
+          <p className="text-partrunner-gray-dark/70 text-xs mt-2">
             {formatCurrency(stats?.standardAmount || 0)}
           </p>
         </div>
@@ -183,20 +183,20 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           {/* Late Invoices Alert */}
           {(stats?.totalLate || 0) > 0 && (
-            <div className="bg-orange-500/10 border border-orange-500/30 rounded-2xl p-6">
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-orange-400" />
+                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-orange-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-orange-300 font-semibold">Facturas Extemporáneas</p>
-                  <p className="text-orange-400/70 text-sm">
+                  <p className="text-orange-700 font-semibold">Facturas Extemporáneas</p>
+                  <p className="text-orange-600/70 text-sm">
                     {stats?.totalLate} facturas fuera de tiempo
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-orange-400">{stats?.totalLate}</p>
-                  <p className="text-orange-400/70 text-xs">
+                  <p className="text-2xl font-bold text-orange-600">{stats?.totalLate}</p>
+                  <p className="text-orange-500 text-xs">
                     {formatCurrency(stats?.lateAmount || 0)}
                   </p>
                 </div>
@@ -206,20 +206,20 @@ const Dashboard: React.FC = () => {
 
           {/* Needs Review Alert */}
           {(stats?.needsProjectReview || 0) > 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-amber-400" />
+                <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-amber-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-amber-300 font-semibold">Requieren Revisión</p>
-                  <p className="text-amber-400/70 text-sm">
+                  <p className="text-amber-700 font-semibold">Requieren Revisión</p>
+                  <p className="text-amber-600/70 text-sm">
                     Proyecto no identificado automáticamente
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-amber-400">{stats?.needsProjectReview}</p>
-                  <p className="text-amber-400/70 text-xs">facturas pendientes</p>
+                  <p className="text-2xl font-bold text-amber-600">{stats?.needsProjectReview}</p>
+                  <p className="text-amber-500 text-xs">facturas pendientes</p>
                 </div>
               </div>
             </div>
@@ -230,26 +230,26 @@ const Dashboard: React.FC = () => {
       {/* Distribution Card */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Payment Program Distribution */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-          <h3 className="text-lg font-semibold text-white mb-6">Distribución por Programa</h3>
+        <div className="bg-white rounded-xl border border-partrunner-gray-light p-6 shadow-card">
+          <h3 className="text-lg font-semibold text-partrunner-black mb-6">Distribución por Programa</h3>
           <div className="space-y-4">
             {/* Pronto Pago Bar */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-400" />
-                  <span className="text-slate-300">Pronto Pago</span>
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  <span className="text-partrunner-gray-dark">Pronto Pago</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-white font-semibold">{stats?.totalProntoPago || 0}</span>
-                  <span className="text-slate-500 text-sm ml-2">
+                  <span className="text-partrunner-black font-semibold">{stats?.totalProntoPago || 0}</span>
+                  <span className="text-partrunner-gray-dark/70 text-sm ml-2">
                     ({formatCurrency(stats?.prontoPagoAmount || 0)})
                   </span>
                 </div>
               </div>
-              <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all duration-500"
                   style={{ 
                     width: `${stats && stats.totalInvoices > 0 
                       ? ((stats.totalProntoPago || 0) / stats.totalInvoices) * 100 
@@ -263,19 +263,19 @@ const Dashboard: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span className="text-slate-300">Estándar</span>
+                  <Clock className="w-4 h-4 text-blue-500" />
+                  <span className="text-partrunner-gray-dark">Estándar</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-white font-semibold">{stats?.totalStandard || 0}</span>
-                  <span className="text-slate-500 text-sm ml-2">
+                  <span className="text-partrunner-black font-semibold">{stats?.totalStandard || 0}</span>
+                  <span className="text-partrunner-gray-dark/70 text-sm ml-2">
                     ({formatCurrency(stats?.standardAmount || 0)})
                   </span>
                 </div>
               </div>
-              <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full transition-all duration-500"
                   style={{ 
                     width: `${stats && stats.totalInvoices > 0 
                       ? ((stats.totalStandard || 0) / stats.totalInvoices) * 100 
@@ -287,22 +287,22 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Summary */}
-          <div className="mt-6 pt-6 border-t border-slate-700/50 space-y-3">
+          <div className="mt-6 pt-6 border-t border-partrunner-gray-light space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">Total facturas</span>
-              <span className="text-white font-semibold">
+              <span className="text-partrunner-gray-dark">Total facturas</span>
+              <span className="text-partrunner-black font-semibold">
                 {(stats?.totalProntoPago || 0) + (stats?.totalStandard || 0)} / {stats?.totalInvoices || 0}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">Suma de montos</span>
-              <span className="text-white font-semibold">
+              <span className="text-partrunner-gray-dark">Suma de montos</span>
+              <span className="text-partrunner-black font-semibold">
                 {formatCurrency((stats?.prontoPagoAmount || 0) + (stats?.standardAmount || 0))}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-400">Ingresos por Pronto Pago (fees)</span>
-              <span className="text-emerald-400 font-semibold">
+              <span className="text-partrunner-gray-dark">Ingresos por Pronto Pago (fees)</span>
+              <span className="text-emerald-500 font-semibold">
                 {formatCurrency(stats?.prontoPagoFees || 0)}
               </span>
             </div>
@@ -310,55 +310,55 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent Invoices */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-          <h3 className="text-lg font-semibold text-white mb-6">Facturas Recientes</h3>
-          <div className="space-y-4">
+        <div className="bg-white rounded-xl border border-partrunner-gray-light p-6 shadow-card">
+          <h3 className="text-lg font-semibold text-partrunner-black mb-6">Facturas Recientes</h3>
+          <div className="space-y-3">
             {recentInvoices.length === 0 ? (
-              <p className="text-slate-500 text-center py-8">No hay facturas recientes</p>
+              <p className="text-partrunner-gray-dark/70 text-center py-8">No hay facturas recientes</p>
             ) : (
               recentInvoices.map((invoice) => (
                 <div 
                   key={invoice.id}
-                  className={`flex items-center justify-between p-3 rounded-xl ${
+                  className={`flex items-center justify-between p-3 rounded-xl border transition-all hover:shadow-card ${
                     invoice.is_late 
-                      ? 'bg-orange-500/10 border border-orange-500/20' 
-                      : 'bg-slate-900/50'
+                      ? 'bg-orange-50 border-orange-200' 
+                      : 'bg-gray-50 border-gray-100'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center relative ${
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                       invoice.is_late
-                        ? 'bg-orange-500/20'
+                        ? 'bg-orange-100'
                         : invoice.payment_program === 'pronto_pago' 
-                          ? 'bg-amber-500/20' 
-                          : 'bg-blue-500/20'
+                          ? 'bg-amber-100' 
+                          : 'bg-blue-100'
                     }`}>
                       {invoice.is_late ? (
-                        <AlertTriangle className="w-5 h-5 text-orange-400" />
+                        <AlertTriangle className="w-5 h-5 text-orange-500" />
                       ) : invoice.payment_program === 'pronto_pago' ? (
-                        <Zap className="w-5 h-5 text-amber-400" />
+                        <Zap className="w-5 h-5 text-amber-500" />
                       ) : (
-                        <Clock className="w-5 h-5 text-blue-400" />
+                        <Clock className="w-5 h-5 text-blue-500" />
                       )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-white font-medium text-sm truncate max-w-[120px]">
+                        <p className="text-partrunner-black font-medium text-sm truncate max-w-[140px]">
                           {invoice.issuer_name}
                         </p>
                         {invoice.is_late && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded-full border border-orange-500/30">
+                          <span className="text-[10px] px-1.5 py-0.5 bg-orange-200 text-orange-700 rounded-full font-medium">
                             EXTEMP.
                           </span>
                         )}
                       </div>
-                      <p className="text-slate-500 text-xs">
+                      <p className="text-partrunner-gray-dark/70 text-xs">
                         {format(new Date(invoice.created_at), 'dd MMM, HH:mm', { locale: es })}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-white font-semibold text-sm">
+                    <p className="text-partrunner-black font-semibold text-sm">
                       {formatCurrency(invoice.total_amount)}
                     </p>
                     {getStatusBadge(invoice.status)}

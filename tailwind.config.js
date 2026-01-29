@@ -12,21 +12,35 @@ export default {
         display: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
-        // Partrunner Brand Colors
+        // Partrunner Brand Colors (from Figma design)
         partrunner: {
-          yellow: '#F5C341',
-          'yellow-dark': '#D4A626',
-          'yellow-light': '#FFD966',
+          // Primary Yellow
+          yellow: '#FFD840',
+          'yellow-dark': '#FED330',
+          'yellow-accent': '#F29F05',
+          'yellow-light': '#FFF9E5',
           'yellow-50': '#FFFBEB',
           'yellow-100': '#FEF3C7',
-          black: '#1A1A1A',
+          
+          // Neutral/Dark
+          black: '#14142B',
           charcoal: '#2D2D2D',
-          'gray-dark': '#3D3D3D',
+          'gray-dark': '#4E4B66',
+          'gray-light': '#D9DBE9',
+          
+          // Backgrounds
+          'bg-main': '#F5F7FB',
+          'bg-card': '#FFFFFF',
+          
+          // Status Colors
+          green: '#26B76E',
+          red: '#FF4757',
+          teal: '#10C89B',
         },
         // Legacy brand colors (for backwards compatibility)
         brand: {
-          yellow: '#F5C341',
-          red: '#B91C1C',
+          yellow: '#FFD840',
+          red: '#FF4757',
         },
       },
       animation: {
@@ -50,15 +64,16 @@ export default {
         },
       },
       boxShadow: {
-        'partrunner': '0 4px 14px 0 rgba(245, 195, 65, 0.25)',
-        'partrunner-lg': '0 10px 40px 0 rgba(245, 195, 65, 0.3)',
-        'card': '0 2px 8px 0 rgba(0, 0, 0, 0.08)',
-        'card-hover': '0 8px 24px 0 rgba(0, 0, 0, 0.12)',
+        'partrunner': '0 4px 14px 0 rgba(255, 216, 64, 0.25)',
+        'partrunner-lg': '0 10px 40px 0 rgba(255, 216, 64, 0.3)',
+        'card': '0 2px 8px 0 rgba(0, 0, 0, 0.04)',
+        'card-hover': '0 8px 24px 0 rgba(0, 0, 0, 0.08)',
+        'header': '0 54px 58px -12px rgba(233, 235, 244, 0.6)',
       },
       borderRadius: {
-        '2xl': '1rem',
-        '3xl': '1.5rem',
-        '4xl': '2rem',
+        '2xl': '0.75rem',
+        '3xl': '1rem',
+        '4xl': '1.5rem',
       },
     },
   },
