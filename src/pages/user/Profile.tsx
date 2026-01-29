@@ -12,6 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import UserLayout from '../../components/user/UserLayout';
+import CSDUploadSection from '../../components/user/CSDUploadSection';
 import { useUserAuthContext } from '../../contexts/UserAuthContext';
 import { updateUserProfile, updateOnboardingBank } from '../../services/userService';
 
@@ -326,6 +327,11 @@ const UserProfile: React.FC = () => {
               Actualizar Datos Bancarios
             </button>
           </form>
+        </div>
+
+        {/* CSD Upload Section - For electronic invoicing */}
+        <div className="lg:col-span-2">
+          <CSDUploadSection />
         </div>
       </div>
     </UserLayout>

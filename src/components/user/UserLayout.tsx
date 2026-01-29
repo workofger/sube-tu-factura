@@ -9,6 +9,7 @@ import {
   X,
   ChevronRight,
   Upload,
+  Receipt,
 } from 'lucide-react';
 import { useUserAuthContext } from '../../contexts/UserAuthContext';
 
@@ -25,6 +26,7 @@ const UserLayout: React.FC<UserLayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/portal/dashboard', icon: LayoutDashboard },
     { name: 'Mis Facturas', href: '/portal/invoices', icon: FileText },
+    { name: 'Facturación', href: '/portal/facturacion', icon: Receipt },
     { name: 'Subir Factura', href: '/', icon: Upload },
     { name: 'Mi Perfil', href: '/portal/profile', icon: User },
   ];

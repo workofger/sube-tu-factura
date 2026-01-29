@@ -11,7 +11,7 @@ import UploadPage from './pages/Upload';
 import { Login, Dashboard, Invoices, Reports, Settings, ApiKeys, Users, Projects } from './pages/admin';
 
 // User Portal Pages
-import { UserLogin, UserDashboard, UserInvoices, UserProfile, Onboarding } from './pages/user';
+import { UserLogin, UserDashboard, UserInvoices, UserProfile, Onboarding, UserInvoicing } from './pages/user';
 
 // Components
 import { ProtectedRoute } from './components/admin';
@@ -131,6 +131,14 @@ const App: React.FC = () => {
                   element={
                     <UserProtectedRoute requiresOnboarding>
                       <UserProfile />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="facturacion"
+                  element={
+                    <UserProtectedRoute requiresOnboarding>
+                      <UserInvoicing />
                     </UserProtectedRoute>
                   }
                 />
