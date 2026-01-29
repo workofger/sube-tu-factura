@@ -86,8 +86,8 @@ export const extractInvoiceData = async (
     console.log(`✅ Respuesta recibida en ${elapsed}s`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("✅ EXTRACCIÓN EXITOSA");
-    console.log("Emisor:", result.billerName);
-    console.log("RFC:", result.rfc);
+    console.log("Emisor:", result.issuerName);
+    console.log("RFC:", result.issuerRfc);
     console.log("UUID:", result.uuid);
     console.log("Total:", result.totalAmount, result.currency);
     console.log("Items:", result.items?.length || 0);

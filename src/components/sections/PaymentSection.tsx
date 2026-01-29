@@ -29,7 +29,7 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
         </span>
         <h3 className="section-title">Desglose y Pago</h3>
         {readOnly && (
-          <span className="ml-auto flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+          <span className="ml-auto flex items-center gap-1 text-xs text-gray-400">
             <Lock size={12} />
             Solo lectura
           </span>
@@ -47,7 +47,7 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
           readOnly={readOnly}
         />
         {formData.certificationDate && (
-          <p className="text-xs text-partrunner-yellow-dark dark:text-partrunner-yellow mt-2 ml-0.5 flex items-center gap-1.5">
+          <p className="text-xs text-partrunner-yellow-accent mt-2 ml-0.5 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-partrunner-yellow rounded-full"></span>
             Timbrado: {formData.certificationDate}
           </p>
@@ -57,11 +57,11 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
       {/* Payment Method Section */}
       <div className={`card p-4 transition-colors ${
         formData.paymentMethod === 'PPD' 
-          ? 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/5' 
+          ? 'border-red-200 bg-red-50' 
           : ''
       }`}>
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+          <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
             Método de Pago (XML)
             {readOnly && <Lock size={12} className="text-gray-400" />}
           </label>
@@ -75,7 +75,7 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
                 disabled={readOnly}
                 className="w-4 h-4 text-partrunner-yellow accent-partrunner-yellow"
               />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">PUE (Pago Único)</span>
+              <span className="text-sm font-medium text-gray-700">PUE (Pago Único)</span>
             </label>
             <label className={`flex items-center gap-2 cursor-pointer ${readOnly ? 'pointer-events-none' : ''}`}>
               <input 
@@ -86,35 +86,35 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
                 disabled={readOnly}
                 className="w-4 h-4 text-red-500 accent-red-500"
               />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">PPD (Parcial/Diferido)</span>
+              <span className="text-sm font-medium text-gray-700">PPD (Parcial/Diferido)</span>
             </label>
           </div>
           
-          <div className="mt-2 text-sm font-semibold p-3 rounded-xl bg-white/60 dark:bg-partrunner-black/30">
+          <div className="mt-2 text-sm font-semibold p-3 rounded-xl bg-gray-50">
             {formData.paymentMethod === 'PUE' && (
-              <span className="text-partrunner-yellow-dark dark:text-partrunner-yellow flex items-center gap-2">
+              <span className="text-partrunner-yellow-accent flex items-center gap-2">
                 <CheckSquare size={16} /> Transferencia electrónica de fondos
               </span>
             )}
             {formData.paymentMethod === 'PPD' && (
               <div className="space-y-2">
-                <span className="text-red-600 dark:text-red-400 flex items-center gap-2">
+                <span className="text-red-600 flex items-center gap-2">
                   <AlertCircle size={16} /> Por definir
                 </span>
-                <div className="text-xs text-red-600 dark:text-red-400 font-bold bg-red-100 dark:bg-red-500/20 px-3 py-2 rounded-lg">
+                <div className="text-xs text-red-600 font-bold bg-red-100 px-3 py-2 rounded-lg">
                   ⚠️ ALERTA: Se requiere envío de complemento de pago.
                 </div>
               </div>
             )}
             {!formData.paymentMethod && (
-              <span className="text-gray-400 dark:text-gray-500">Selecciona método...</span>
+              <span className="text-gray-400">Selecciona método...</span>
             )}
           </div>
 
           {/* Payment Form */}
           {formData.paymentForm && (
-            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Forma de Pago: <span className="font-medium text-gray-700 dark:text-gray-300">{formData.paymentForm}</span>
+            <div className="mt-1 text-xs text-gray-500">
+              Forma de Pago: <span className="font-medium text-gray-700">{formData.paymentForm}</span>
             </div>
           )}
         </div>
@@ -143,12 +143,12 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
 
         {/* Retentions Section */}
         {(showRetentionIva || showRetentionIsr) && (
-          <div className="border-t border-gray-100 dark:border-partrunner-gray-dark pt-4 space-y-3">
+          <div className="border-t border-gray-100 pt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                 Retenciones
               </h5>
-              <div className="flex items-center gap-1 text-[10px] bg-partrunner-yellow/10 text-partrunner-yellow-dark dark:text-partrunner-yellow px-2 py-1 rounded-full">
+              <div className="flex items-center gap-1 text-[10px] bg-partrunner-yellow/10 text-partrunner-yellow-accent px-2 py-1 rounded-full">
                 <Info size={10} /> Extraídas del XML
               </div>
             </div>
@@ -179,7 +179,7 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
         )}
 
         {/* Total and Currency */}
-        <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-partrunner-gray-dark">
+        <div className="flex gap-3 pt-4 border-t border-gray-100">
           <InputField
             label="Monto Total"
             type="number"
@@ -191,15 +191,15 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
             readOnly={readOnly}
           />
           <div className="w-28">
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-0.5 block mb-1.5 flex items-center gap-1">
+            <label className="text-sm font-semibold text-gray-700 ml-0.5 block mb-1.5 flex items-center gap-1">
               Moneda
               {readOnly && <Lock size={12} className="text-gray-400" />}
             </label>
             <select 
               className={`w-full rounded-xl py-2.5 px-3 outline-none transition-all duration-200 border-2
                 ${readOnly 
-                  ? 'bg-gray-100 dark:bg-partrunner-black/50 border-gray-200 dark:border-partrunner-gray-dark text-gray-500 dark:text-gray-500 cursor-default'
-                  : 'bg-white dark:bg-partrunner-charcoal border-gray-200 dark:border-partrunner-gray-dark text-gray-900 dark:text-white focus:border-partrunner-yellow'
+                  ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-default'
+                  : 'bg-white border-gray-200 text-gray-900 focus:border-partrunner-yellow'
                 }
               `}
               value={formData.currency}

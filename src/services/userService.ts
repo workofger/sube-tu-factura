@@ -78,6 +78,8 @@ export interface UserInvoice {
   created_at: string;
   project_name: string | null;
   project_code: string | null;
+  is_late?: boolean;
+  late_reason?: string | null;
 }
 
 export interface InvoicesResponse {

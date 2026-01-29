@@ -25,7 +25,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
       {/* Contact Info Card */}
       <div className="card p-5 space-y-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-gray-500">
           Ingresa tus datos de contacto para recibir confirmación del procesamiento de tu factura.
         </p>
         
@@ -61,11 +61,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
         />
 
         {/* Info Note */}
-        <div className="flex items-start gap-2 p-3 bg-partrunner-yellow/10 dark:bg-partrunner-yellow/5 rounded-lg border border-partrunner-yellow/20">
+        <div className="flex items-start gap-2 p-3 bg-partrunner-yellow/10 rounded-lg border border-partrunner-yellow/20">
           <div className="w-5 h-5 rounded-full bg-partrunner-yellow/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-partrunner-yellow-dark dark:text-partrunner-yellow text-xs font-bold">i</span>
+            <span className="text-partrunner-yellow-accent text-xs font-bold">i</span>
           </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+          <p className="text-xs text-gray-600">
             Recibirás un correo de confirmación con el estatus de tu factura y detalles del pago programado.
           </p>
         </div>

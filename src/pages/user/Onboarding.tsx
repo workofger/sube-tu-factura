@@ -10,7 +10,6 @@ import {
   Loader2,
   ChevronRight,
   AlertCircle,
-  FileCheck,
 } from 'lucide-react';
 import { useUserAuthContext } from '../../contexts/UserAuthContext';
 import {
@@ -184,14 +183,16 @@ const Onboarding: React.FC = () => {
           <div className="text-center py-8">
             {onboardingStatus?.steps.verify_email.completed ? (
               <>
-                <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">Email Verificado</h3>
-                <p className="text-slate-400 mb-6">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-10 h-10 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-partrunner-black mb-2">Email Verificado</h3>
+                <p className="text-gray-500 mb-6">
                   Tu email {onboardingStatus.user.email} ha sido verificado.
                 </p>
                 <button
                   onClick={() => setCurrentStep('bank_info')}
-                  className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/25"
+                  className="px-6 py-3 bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black rounded-xl font-semibold shadow-partrunner"
                 >
                   Continuar
                   <ChevronRight className="w-5 h-5 inline ml-2" />
@@ -199,13 +200,15 @@ const Onboarding: React.FC = () => {
               </>
             ) : (
               <>
-                <Mail className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">Verifica tu Email</h3>
-                <p className="text-slate-400 mb-6">
+                <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-10 h-10 text-amber-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-partrunner-black mb-2">Verifica tu Email</h3>
+                <p className="text-gray-500 mb-6">
                   Hemos enviado un enlace de verificación a{' '}
-                  <strong className="text-white">{onboardingStatus?.user.email}</strong>
+                  <strong className="text-partrunner-black">{onboardingStatus?.user.email}</strong>
                 </p>
-                <p className="text-slate-500 text-sm">
+                <p className="text-gray-400 text-sm">
                   Revisa tu bandeja de entrada y haz clic en el enlace para continuar.
                 </p>
               </>
@@ -217,7 +220,7 @@ const Onboarding: React.FC = () => {
         return (
           <form onSubmit={handleBankSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Nombre del Banco *
               </label>
               <input
@@ -225,13 +228,13 @@ const Onboarding: React.FC = () => {
                 required
                 value={bankForm.bank_name}
                 onChange={(e) => setBankForm({ ...bankForm, bank_name: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="BBVA, Santander, Banorte..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 CLABE Interbancaria (18 dígitos) *
               </label>
               <input
@@ -242,17 +245,17 @@ const Onboarding: React.FC = () => {
                 onChange={(e) =>
                   setBankForm({ ...bankForm, bank_clabe: e.target.value.replace(/\D/g, '') })
                 }
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black font-mono focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="000000000000000000"
               />
-              <p className="text-slate-500 text-xs mt-1">
+              <p className="text-gray-400 text-xs mt-1">
                 {bankForm.bank_clabe.length}/18 dígitos
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Número de Cuenta <span className="text-slate-500">(opcional)</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Número de Cuenta <span className="text-gray-400">(opcional)</span>
               </label>
               <input
                 type="text"
@@ -260,7 +263,7 @@ const Onboarding: React.FC = () => {
                 onChange={(e) =>
                   setBankForm({ ...bankForm, bank_account_number: e.target.value })
                 }
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="Número de cuenta"
               />
             </div>
@@ -268,7 +271,7 @@ const Onboarding: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black font-semibold rounded-xl shadow-partrunner disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -289,7 +292,7 @@ const Onboarding: React.FC = () => {
         return (
           <form onSubmit={handleProfileSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">RFC *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">RFC *</label>
               <input
                 type="text"
                 required
@@ -298,13 +301,13 @@ const Onboarding: React.FC = () => {
                 onChange={(e) =>
                   setProfileForm({ ...profileForm, rfc: e.target.value.toUpperCase() })
                 }
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black font-mono focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="XAXX010101000"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Nombre o Razón Social *
               </label>
               <input
@@ -312,44 +315,44 @@ const Onboarding: React.FC = () => {
                 required
                 value={profileForm.fiscal_name}
                 onChange={(e) => setProfileForm({ ...profileForm, fiscal_name: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="Juan Pérez García"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Nombre Comercial <span className="text-slate-500">(opcional)</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre Comercial <span className="text-gray-400">(opcional)</span>
               </label>
               <input
                 type="text"
                 value={profileForm.trade_name}
                 onChange={(e) => setProfileForm({ ...profileForm, trade_name: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="Mi Empresa"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Teléfono *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono *</label>
               <input
                 type="tel"
                 required
                 value={profileForm.phone}
                 onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="55 1234 5678"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Dirección *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Dirección *</label>
               <textarea
                 required
                 rows={2}
                 value={profileForm.address}
                 onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow resize-none"
                 placeholder="Calle, número, colonia, ciudad, estado, CP"
               />
             </div>
@@ -357,7 +360,7 @@ const Onboarding: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black font-semibold rounded-xl shadow-partrunner disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -378,13 +381,15 @@ const Onboarding: React.FC = () => {
         if (!onboardingStatus?.steps.change_password.required) {
           return (
             <div className="text-center py-8">
-              <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">¡Todo listo!</h3>
-              <p className="text-slate-400 mb-6">Has completado toda la información requerida.</p>
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-partrunner-black mb-2">¡Todo listo!</h3>
+              <p className="text-gray-500 mb-6">Has completado toda la información requerida.</p>
               <button
                 onClick={handleComplete}
                 disabled={isSubmitting}
-                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/25 flex items-center gap-2 mx-auto disabled:opacity-50"
+                className="px-6 py-3 bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black rounded-xl font-semibold shadow-partrunner flex items-center gap-2 mx-auto disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
@@ -404,18 +409,18 @@ const Onboarding: React.FC = () => {
 
         return (
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-4">
-              <div className="flex items-center gap-2 text-amber-400 mb-1">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-2 text-amber-700 mb-1">
                 <AlertCircle className="w-5 h-5" />
                 <span className="font-semibold">Cambio de contraseña requerido</span>
               </div>
-              <p className="text-amber-300/80 text-sm">
+              <p className="text-amber-600 text-sm">
                 Por seguridad, debes cambiar tu contraseña temporal.
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Contraseña Actual (temporal) *
               </label>
               <input
@@ -425,13 +430,13 @@ const Onboarding: React.FC = () => {
                 onChange={(e) =>
                   setPasswordForm({ ...passwordForm, current_password: e.target.value })
                 }
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="••••••••"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Nueva Contraseña *
               </label>
               <input
@@ -442,13 +447,13 @@ const Onboarding: React.FC = () => {
                 onChange={(e) =>
                   setPasswordForm({ ...passwordForm, new_password: e.target.value })
                 }
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="Mínimo 8 caracteres"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Confirmar Contraseña *
               </label>
               <input
@@ -458,7 +463,7 @@ const Onboarding: React.FC = () => {
                 onChange={(e) =>
                   setPasswordForm({ ...passwordForm, confirm_password: e.target.value })
                 }
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full px-4 py-3 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
                 placeholder="••••••••"
               />
             </div>
@@ -466,7 +471,7 @@ const Onboarding: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black font-semibold rounded-xl shadow-partrunner disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -493,17 +498,19 @@ const Onboarding: React.FC = () => {
 
   if (canComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 max-w-md w-full text-center">
-          <CheckCircle className="w-20 h-20 text-emerald-400 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold text-white mb-4">¡Configuración Completa!</h2>
-          <p className="text-slate-400 mb-8">
+      <div className="min-h-screen bg-partrunner-bg-main flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl border border-partrunner-gray-light p-8 max-w-md w-full text-center shadow-xl">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-partrunner-black mb-4">¡Configuración Completa!</h2>
+          <p className="text-gray-500 mb-8">
             Has completado toda la información requerida. Ya puedes usar el portal.
           </p>
           <button
             onClick={handleComplete}
             disabled={isSubmitting}
-            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black font-semibold rounded-xl shadow-partrunner disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>
@@ -523,21 +530,29 @@ const Onboarding: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 w-full max-w-2xl overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-700/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
-              <FileCheck className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">Configura tu cuenta</h1>
-              <p className="text-slate-400 text-sm">Completa los siguientes pasos para comenzar</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-partrunner-bg-main flex items-center justify-center p-4">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,216,64,0.08),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,216,64,0.05),transparent_50%)]"></div>
+      </div>
 
-          {/* Progress Steps */}
+      <div className="bg-white rounded-2xl border border-partrunner-gray-light w-full max-w-2xl overflow-hidden shadow-xl relative z-10">
+        {/* Header */}
+        <div className="p-6 border-b border-partrunner-gray-light bg-partrunner-yellow">
+          <div className="flex items-center gap-3 mb-4">
+            <img 
+              src="/images/logo-full-black.png"
+              alt="Partrunner"
+              className="h-10 w-auto"
+            />
+          </div>
+          <h1 className="text-xl font-bold text-partrunner-black">Configura tu cuenta</h1>
+          <p className="text-partrunner-black/70 text-sm">Completa los siguientes pasos para comenzar</p>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="px-6 py-4 border-b border-partrunner-gray-light bg-gray-50">
           <div className="flex items-center justify-between">
             {STEPS.map((step, index) => {
               const status = getStepStatus(step.key);
@@ -559,10 +574,10 @@ const Onboarding: React.FC = () => {
                     disabled={status === 'pending'}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                       status === 'completed'
-                        ? 'text-emerald-400'
+                        ? 'text-green-600'
                         : status === 'current'
-                        ? 'text-white bg-slate-700/50'
-                        : 'text-slate-500'
+                        ? 'text-partrunner-black bg-white shadow-sm border border-partrunner-gray-light'
+                        : 'text-gray-400'
                     }`}
                   >
                     {status === 'completed' ? (
@@ -575,7 +590,7 @@ const Onboarding: React.FC = () => {
                   {!isLast && step.key !== 'change_password' && (
                     <div
                       className={`flex-1 h-0.5 mx-2 ${
-                        status === 'completed' ? 'bg-emerald-500' : 'bg-slate-700'
+                        status === 'completed' ? 'bg-green-500' : 'bg-gray-200'
                       }`}
                     />
                   )}
@@ -588,14 +603,16 @@ const Onboarding: React.FC = () => {
         {/* Content */}
         <div className="p-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4">
-              <p className="text-red-400">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-red-700">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
-              <p className="text-emerald-400">{success}</p>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <p className="text-green-700">{success}</p>
             </div>
           )}
 

@@ -1,17 +1,13 @@
 import React from 'react';
-import { Clock, Zap, DollarSign, AlertCircle, Check } from 'lucide-react';
-import { PaymentProgram, PRONTO_PAGO_FEE_RATE } from '../../types/invoice';
-import { formatMoney } from '../../utils/formatters';
+import { Zap, Clock, DollarSign, Info, ArrowRight } from 'lucide-react';
+import { PaymentProgram, PRONTO_PAGO_FEE_RATE, ProntoPagoPreview } from '../../types/invoice';
+import { formatNumber } from '../../utils/formatters';
 
 interface PaymentProgramSelectorProps {
   selectedProgram: PaymentProgram;
   onProgramChange: (program: PaymentProgram) => void;
   totalAmount: number;
-  prontoPagoPreview: {
-    feeAmount: number;
-    netAmount: number;
-    standardAmount: number;
-  };
+  prontoPagoPreview: ProntoPagoPreview | null;
   disabled?: boolean;
 }
 
@@ -22,8 +18,7 @@ export const PaymentProgramSelector: React.FC<PaymentProgramSelectorProps> = ({
   prontoPagoPreview,
   disabled = false,
 }) => {
-  const feePercentage = Math.round(PRONTO_PAGO_FEE_RATE * 100);
-  const netPercentage = 100 - feePercentage;
+  const feePercentage = (PRONTO_PAGO_FEE_RATE * 100).toFixed(0);
 
   return (
     <div className="space-y-5">
@@ -35,194 +30,146 @@ export const PaymentProgramSelector: React.FC<PaymentProgramSelectorProps> = ({
         <h3 className="section-title">Programa de Pago</h3>
       </div>
 
-      <div className="card p-5">
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
-          Selecciona cómo deseas recibir el pago de tu factura
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Standard Payment Option */}
-          <button
-            type="button"
-            onClick={() => onProgramChange('standard')}
-            disabled={disabled}
-            className={`
-              relative p-5 rounded-xl border-2 transition-all duration-200 text-left
-              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md dark:hover:shadow-black/20'}
-              ${
-                selectedProgram === 'standard'
-                  ? 'border-partrunner-yellow bg-partrunner-yellow/5 dark:bg-partrunner-yellow/10'
-                  : 'border-gray-200 dark:border-partrunner-gray-dark bg-white dark:bg-partrunner-black/30 hover:border-gray-300 dark:hover:border-partrunner-yellow/30'
-              }
-            `}
-          >
-            {/* Selection Indicator */}
-            <div
-              className={`
-                absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
-                ${
-                  selectedProgram === 'standard'
-                    ? 'border-partrunner-yellow bg-partrunner-yellow'
-                    : 'border-gray-300 dark:border-partrunner-gray-dark bg-white dark:bg-partrunner-charcoal'
-                }
-              `}
-            >
-              {selectedProgram === 'standard' && (
-                <Check size={12} className="text-partrunner-black" strokeWidth={3} />
-              )}
-            </div>
-
-            {/* Icon and Title */}
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className={`
-                  p-2.5 rounded-xl transition-colors
-                  ${selectedProgram === 'standard' ? 'bg-partrunner-yellow/20' : 'bg-gray-100 dark:bg-partrunner-gray-dark'}
-                `}
-              >
-                <Clock
-                  className={`w-5 h-5 ${
-                    selectedProgram === 'standard' ? 'text-partrunner-yellow' : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                />
-              </div>
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white">Pago Estándar</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Semana siguiente</p>
-              </div>
-            </div>
-
-            {/* Description */}
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Tu pago se programará para el lunes de la próxima semana.
-            </p>
-
-            {/* Amount Display */}
-            <div className="bg-gray-50 dark:bg-partrunner-black/50 rounded-xl p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Recibirás</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatMoney(prontoPagoPreview.standardAmount)}
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-400 font-semibold mt-1">100% del total</p>
-            </div>
-          </button>
-
-          {/* Pronto Pago Option */}
-          <button
-            type="button"
-            onClick={() => onProgramChange('pronto_pago')}
-            disabled={disabled}
-            className={`
-              relative p-5 rounded-xl border-2 transition-all duration-200 text-left
-              ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md dark:hover:shadow-black/20'}
-              ${
-                selectedProgram === 'pronto_pago'
-                  ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-500/10'
-                  : 'border-gray-200 dark:border-partrunner-gray-dark bg-white dark:bg-partrunner-black/30 hover:border-gray-300 dark:hover:border-amber-500/30'
-              }
-            `}
-          >
-            {/* Selection Indicator */}
-            <div
-              className={`
-                absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
-                ${
-                  selectedProgram === 'pronto_pago'
-                    ? 'border-amber-500 bg-amber-500'
-                    : 'border-gray-300 dark:border-partrunner-gray-dark bg-white dark:bg-partrunner-charcoal'
-                }
-              `}
-            >
-              {selectedProgram === 'pronto_pago' && (
-                <Check size={12} className="text-white" strokeWidth={3} />
-              )}
-            </div>
-
-            {/* Badge */}
-            <div className="absolute -top-2.5 left-4">
-              <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg shadow-amber-500/20">
-                ⚡ RÁPIDO
-              </span>
-            </div>
-
-            {/* Icon and Title */}
-            <div className="flex items-center gap-3 mb-3 mt-1">
-              <div
-                className={`
-                  p-2.5 rounded-xl transition-colors
-                  ${selectedProgram === 'pronto_pago' ? 'bg-amber-100 dark:bg-amber-500/20' : 'bg-gray-100 dark:bg-partrunner-gray-dark'}
-                `}
-              >
-                <Zap
-                  className={`w-5 h-5 ${
-                    selectedProgram === 'pronto_pago' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                />
-              </div>
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white">Pronto Pago</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">1 día hábil</p>
-              </div>
-            </div>
-
-            {/* Description */}
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Recibe tu pago al siguiente día hábil con un costo financiero.
-            </p>
-
-            {/* Amount Display */}
-            <div className="bg-amber-50 dark:bg-amber-500/10 rounded-xl p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Recibirás</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatMoney(prontoPagoPreview.netAmount)}
-              </p>
-              <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold mt-1">
-                {netPercentage}% del total
-              </p>
-            </div>
-
-            {/* Fee Warning */}
-            <div className="mt-3 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              <span>
-                Costo financiero: {formatMoney(prontoPagoPreview.feeAmount)} ({feePercentage}%)
-              </span>
-            </div>
-          </button>
+      {/* Info Banner */}
+      <div className="flex items-start gap-3 p-4 bg-partrunner-yellow/10 rounded-xl border border-partrunner-yellow/20">
+        <Info size={18} className="text-partrunner-yellow-accent flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-gray-700">
+          <p className="font-medium">Elige cómo quieres recibir tu pago:</p>
+          <p className="text-gray-500 mt-1">
+            Puedes optar por pago estándar (viernes de la siguiente semana) o Pronto Pago (1 día hábil con {feePercentage}% de costo financiero).
+          </p>
         </div>
+      </div>
 
-        {/* Summary when Pronto Pago is selected */}
-        {selectedProgram === 'pronto_pago' && totalAmount > 0 && (
-          <div className="mt-5 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl">
-            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-semibold mb-3">
-              <Zap className="w-4 h-4" />
-              <span>Resumen de Pronto Pago</span>
+      {/* Program Options */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Standard Payment */}
+        <button
+          type="button"
+          onClick={() => onProgramChange('standard')}
+          disabled={disabled}
+          className={`
+            relative p-5 rounded-2xl border-2 text-left transition-all duration-200
+            ${selectedProgram === 'standard'
+              ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-500/10'
+              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/50'
+            }
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          `}
+        >
+          {/* Selected indicator */}
+          {selectedProgram === 'standard' && (
+            <div className="absolute top-3 right-3 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
             </div>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Total Factura</p>
-                <p className="font-bold text-gray-900 dark:text-white">
-                  {formatMoney(prontoPagoPreview.standardAmount)}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Costo Financiero</p>
-                <p className="font-bold text-red-600 dark:text-red-400">
-                  -{formatMoney(prontoPagoPreview.feeAmount)}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">A Recibir</p>
-                <p className="font-bold text-green-600 dark:text-green-400">
-                  {formatMoney(prontoPagoPreview.netAmount)}
-                </p>
-              </div>
+          )}
+
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              selectedProgram === 'standard' ? 'bg-blue-500' : 'bg-blue-100'
+            }`}>
+              <Clock size={24} className={selectedProgram === 'standard' ? 'text-white' : 'text-blue-500'} />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900">Pago Estándar</h4>
+              <p className="text-sm text-gray-500">Sin costo adicional</p>
             </div>
           </div>
-        )}
+
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2 text-gray-600">
+              <ArrowRight size={14} className="text-blue-500" />
+              <span>Pago el viernes de la siguiente semana</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <ArrowRight size={14} className="text-blue-500" />
+              <span>Recibes el 100% del monto facturado</span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Monto a recibir:</p>
+            <p className="text-xl font-bold text-gray-900">
+              ${formatNumber(totalAmount)}
+            </p>
+          </div>
+        </button>
+
+        {/* Pronto Pago */}
+        <button
+          type="button"
+          onClick={() => onProgramChange('pronto_pago')}
+          disabled={disabled}
+          className={`
+            relative p-5 rounded-2xl border-2 text-left transition-all duration-200
+            ${selectedProgram === 'pronto_pago'
+              ? 'border-amber-500 bg-amber-50 shadow-lg shadow-amber-500/10'
+              : 'border-gray-200 bg-white hover:border-amber-300 hover:bg-amber-50/50'
+            }
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          `}
+        >
+          {/* Selected indicator */}
+          {selectedProgram === 'pronto_pago' && (
+            <div className="absolute top-3 right-3 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          )}
+
+          {/* Badge */}
+          <div className="absolute top-3 left-3">
+            <span className="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">
+              RÁPIDO
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 mb-3 mt-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              selectedProgram === 'pronto_pago' ? 'bg-amber-500' : 'bg-amber-100'
+            }`}>
+              <Zap size={24} className={selectedProgram === 'pronto_pago' ? 'text-white' : 'text-amber-500'} />
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900">Pronto Pago</h4>
+              <p className="text-sm text-amber-600">{feePercentage}% costo financiero</p>
+            </div>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2 text-gray-600">
+              <ArrowRight size={14} className="text-amber-500" />
+              <span>Pago en 1 día hábil</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <ArrowRight size={14} className="text-amber-500" />
+              <span>Se descuenta {feePercentage}% del total</span>
+            </div>
+          </div>
+
+          {prontoPagoPreview && (
+            <div className="mt-4 pt-4 border-t border-amber-200 space-y-1">
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Total factura:</span>
+                <span>${formatNumber(prontoPagoPreview.originalAmount)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-red-500">
+                <span>Costo financiero ({feePercentage}%):</span>
+                <span>-${formatNumber(prontoPagoPreview.feeAmount)}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-amber-200">
+                <span className="text-xs text-gray-500">Monto a recibir:</span>
+                <span className="text-xl font-bold text-amber-600">
+                  ${formatNumber(prontoPagoPreview.netAmount)}
+                </span>
+              </div>
+            </div>
+          )}
+        </button>
       </div>
     </div>
   );
 };
-
-export default PaymentProgramSelector;

@@ -17,6 +17,13 @@ export const PRONTO_PAGO_FEE_RATE = 0.08; // 8%
 // Late invoice reason type
 export type LateInvoiceReason = 'after_deadline' | 'wrong_invoice_date' | 'wrong_week_in_description';
 
+// Pronto Pago preview for UI
+export interface ProntoPagoPreview {
+  originalAmount: number;
+  feeAmount: number;
+  netAmount: number;
+}
+
 export interface InvoiceData {
   // Selection fields
   week: string;  // The current week number (for filing)
@@ -24,6 +31,7 @@ export interface InvoiceData {
   expectedWeek: number; // The expected billing week (previous week)
   weekFromDescription?: number; // Week extracted from invoice description by AI
   project: string;
+  needsProjectReview?: boolean; // Flag for manual project review
   
   // Late invoice flags
   isLate: boolean;
@@ -31,8 +39,8 @@ export interface InvoiceData {
   lateAcknowledged: boolean;
   
   // Issuer (Emisor) fields
-  rfc: string;
-  billerName: string;
+  issuerRfc: string;
+  issuerName: string;
   issuerRegime: string;
   issuerZipCode?: string; // CP del emisor
   
@@ -102,8 +110,8 @@ export interface ExtractionResult {
   needsProjectReview?: boolean;
   
   // Issuer
-  rfc?: string;
-  billerName?: string;
+  issuerRfc?: string;
+  issuerName?: string;
   issuerRegime?: string;
   issuerZipCode?: string;
   

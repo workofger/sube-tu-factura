@@ -59,7 +59,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 
         {/* Filename mismatch error */}
         {displayError && (
-          <div className="flex items-center gap-3 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 px-4 py-3 rounded-xl border border-orange-200 dark:border-orange-500/30 text-sm">
+          <div className="flex items-center gap-3 text-orange-600 bg-orange-50 px-4 py-3 rounded-xl border border-orange-200 text-sm">
             <FileWarning size={18} className="flex-shrink-0" />
             <span className="font-medium">{displayError}</span>
           </div>
@@ -68,22 +68,22 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         {/* Status Messages */}
         <div className="flex items-center justify-center min-h-[48px]">
           {isExtracting ? (
-            <div className="flex items-center gap-3 text-partrunner-yellow-dark dark:text-partrunner-yellow bg-partrunner-yellow/10 px-5 py-3 rounded-xl border border-partrunner-yellow/30 animate-pulse text-sm">
+            <div className="flex items-center gap-3 text-partrunner-yellow-dark bg-partrunner-yellow/10 px-5 py-3 rounded-xl border border-partrunner-yellow/30 animate-pulse text-sm">
               <Loader2 size={18} className="animate-spin" />
               <span className="font-semibold">Leyendo factura y completando formulario...</span>
             </div>
           ) : extractSuccess ? (
-            <div className="flex items-center gap-3 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 px-5 py-3 rounded-xl border border-green-200 dark:border-green-500/30 text-sm">
+            <div className="flex items-center gap-3 text-green-600 bg-green-50 px-5 py-3 rounded-xl border border-green-200 text-sm">
               <CheckCircle size={18} />
               <span className="font-semibold">¡Datos extraídos! Verifica la información abajo.</span>
             </div>
           ) : extractError ? (
-            <div className="flex items-center gap-3 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-5 py-3 rounded-xl border border-red-200 dark:border-red-500/30 text-sm">
+            <div className="flex items-center gap-3 text-red-600 bg-red-50 px-5 py-3 rounded-xl border border-red-200 text-sm">
               <AlertTriangle size={18} />
               <span className="font-semibold">Error al leer. Llena los campos manualmente.</span>
             </div>
           ) : (
-            <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500 text-sm">
+            <div className="flex items-center gap-3 text-gray-400 text-sm">
               <Sparkles size={18} />
               <span>Sube tus archivos para extracción automática con IA</span>
             </div>

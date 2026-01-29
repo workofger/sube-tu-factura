@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Loader2, Send, HelpCircle, Check, AlertTriangle } from 'lucide-react';
+import { Loader2, Send, HelpCircle, Check, AlertTriangle, ChevronDown } from 'lucide-react';
 
 // Hooks
 import { useInvoiceForm } from '../hooks/useInvoiceForm';
@@ -237,8 +237,11 @@ const UploadPage: React.FC = () => {
 
   const canSubmit = isConfirmed && !isSubmitting && (!formData.isLate || formData.lateAcknowledged);
 
+  // Determine if form should be shown (after successful extraction)
+  const showForm = extractSuccess;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-partrunner-black flex flex-col font-sans text-gray-900 dark:text-white transition-colors duration-300">
+    <div className="min-h-screen bg-partrunner-bg-main flex flex-col font-sans text-partrunner-black transition-colors duration-300">
       {/* Header */}
       <Header />
 
@@ -246,11 +249,11 @@ const UploadPage: React.FC = () => {
       <main className="flex-grow px-4 pb-12 -mt-12 relative z-20">
         <div className="max-w-6xl mx-auto">
           {/* Main Card */}
-          <div className="bg-white dark:bg-partrunner-charcoal rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-100 dark:border-partrunner-gray-dark p-6 md:p-10 animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-xl border border-partrunner-gray-light p-6 md:p-10 animate-fade-in">
             
             <form onSubmit={handleSubmit} className="space-y-8">
               
-              {/* Section 1: File Upload */}
+              {/* Section 1: File Upload - Always Visible */}
               <FileUploadSection
                 formData={formData}
                 onFileChange={(field, file) => updateField(field, file)}
@@ -260,133 +263,153 @@ const UploadPage: React.FC = () => {
                 filenameError={filenameError}
               />
 
-              {/* Sections 2 & 3: Fiscal Info and Payment - Side by side */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <FiscalInfoSection
-                  formData={formData}
-                  projects={projects}
-                  projectsLoading={projectsLoading}
-                  onFieldChange={updateField}
-                  readOnly={extractSuccess}
-                />
+              {/* Progressive Disclosure: Show form only after extraction */}
+              {showForm ? (
+                <div className="space-y-8 animate-slide-up">
+                  {/* Sections 2 & 3: Fiscal Info and Payment - Side by side */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <FiscalInfoSection
+                      formData={formData}
+                      projects={projects}
+                      projectsLoading={projectsLoading}
+                      onFieldChange={updateField}
+                      readOnly={extractSuccess}
+                    />
 
-                <PaymentSection
-                  formData={formData}
-                  showRetentionIva={showRetentionIva}
-                  showRetentionIsr={showRetentionIsr}
-                  onFieldChange={updateField}
-                  readOnly={extractSuccess}
-                />
-              </div>
+                    <PaymentSection
+                      formData={formData}
+                      showRetentionIva={showRetentionIva}
+                      showRetentionIsr={showRetentionIsr}
+                      onFieldChange={updateField}
+                      readOnly={extractSuccess}
+                    />
+                  </div>
 
-              {/* Section 4: Items Table */}
-              <ItemsTable
-                items={formData.items}
-                onItemChange={updateItem}
-                onDeleteItem={deleteItem}
-                itemsTotal={itemsTotal}
-              />
+                  {/* Section 4: Items Table */}
+                  <ItemsTable
+                    items={formData.items}
+                    onItemChange={updateItem}
+                    onDeleteItem={deleteItem}
+                    itemsTotal={itemsTotal}
+                  />
 
-              {/* Section 5: Payment Program Selection */}
-              <PaymentProgramSelector
-                selectedProgram={formData.paymentProgram}
-                onProgramChange={setPaymentProgram}
-                totalAmount={parseFloat(formData.totalAmount) || 0}
-                prontoPagoPreview={prontoPagoPreview}
-                disabled={!extractSuccess}
-              />
+                  {/* Section 5: Payment Program Selection */}
+                  <PaymentProgramSelector
+                    selectedProgram={formData.paymentProgram}
+                    onProgramChange={setPaymentProgram}
+                    totalAmount={parseFloat(formData.totalAmount) || 0}
+                    prontoPagoPreview={prontoPagoPreview}
+                    disabled={!extractSuccess}
+                  />
 
-              {/* Section 6: Contact Information (moved here) */}
-              <ContactSection
-                formData={formData}
-                onFieldChange={updateField}
-              />
+                  {/* Section 6: Contact Information */}
+                  <ContactSection
+                    formData={formData}
+                    onFieldChange={updateField}
+                  />
 
-              {/* Section 7: Confirmation & Submit */}
-              <div className="pt-6 border-t border-gray-100 dark:border-partrunner-gray-dark space-y-5">
-                
-                {/* Late Invoice Warning */}
-                {formData.isLate && formData.lateAcknowledged && (
-                  <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/30">
-                    <AlertTriangle size={20} className="text-amber-500 flex-shrink-0" />
-                    <p className="text-sm text-amber-700 dark:text-amber-400">
-                      <strong>Factura extemporánea:</strong> Esta factura se programará para el siguiente ciclo de pago.
+                  {/* Section 7: Confirmation & Submit */}
+                  <div className="pt-6 border-t border-partrunner-gray-light space-y-5">
+                    
+                    {/* Late Invoice Warning */}
+                    {formData.isLate && formData.lateAcknowledged && (
+                      <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                        <AlertTriangle size={20} className="text-amber-500 flex-shrink-0" />
+                        <p className="text-sm text-amber-700">
+                          <strong>Factura extemporánea:</strong> Esta factura se programará para el siguiente ciclo de pago.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Confirmation Checkbox */}
+                    <div className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                      isConfirmed 
+                        ? 'bg-partrunner-yellow/10 border-partrunner-yellow/50' 
+                        : 'bg-gray-50 border-gray-200 hover:border-partrunner-yellow/30'
+                    }`}
+                    onClick={toggleConfirmation}
+                    >
+                      <button 
+                        type="button"
+                        className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
+                          isConfirmed 
+                            ? 'bg-partrunner-yellow border-partrunner-yellow' 
+                            : 'bg-white border-gray-300'
+                        }`}
+                      >
+                        {isConfirmed && <Check size={14} className="text-partrunner-black" strokeWidth={3} />}
+                      </button>
+                      <label className="text-sm text-gray-700 cursor-pointer select-none leading-relaxed">
+                        Confirmo que he revisado la información extraída (conceptos, montos, RFC y proyecto) y es correcta para su procesamiento.
+                      </label>
+                    </div>
+
+                    {/* Submit Result Message */}
+                    {submitResult && (
+                      <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-3 ${
+                        submitResult.success 
+                          ? 'bg-green-50 text-green-700 border border-green-200' 
+                          : 'bg-red-50 text-red-700 border border-red-200'
+                      }`}>
+                        {submitResult.success ? <Check size={18} /> : <AlertTriangle size={18} />}
+                        {submitResult.message}
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-2">
+                      <button 
+                        type="button" 
+                        className="text-gray-500 hover:text-partrunner-black hover:bg-gray-100 font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center gap-2"
+                        onClick={() => window.open('https://wa.me/5215644443529?text=Necesito ayuda con mi factura', '_blank')}
+                      >
+                        <HelpCircle size={18} />
+                        ¿Necesitas ayuda?
+                      </button>
+
+                      <button 
+                        type="submit" 
+                        disabled={!canSubmit}
+                        className={`
+                          font-bold text-lg py-4 px-10 rounded-xl shadow-lg transform transition-all duration-200 
+                          flex items-center gap-3 w-full md:w-auto justify-center
+                          ${canSubmit
+                            ? 'bg-partrunner-yellow hover:bg-partrunner-yellow-dark text-partrunner-black shadow-partrunner hover:-translate-y-0.5' 
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                          }
+                        `}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 size={22} className="animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Send size={22} />
+                            Enviar Factura
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Empty state - hint to upload files */
+                !isExtracting && !isValidating && !extractError && (
+                  <div className="text-center py-12 animate-fade-in">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-partrunner-yellow/10 mb-4">
+                      <ChevronDown size={32} className="text-partrunner-yellow animate-bounce" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      Sube tus archivos para comenzar
+                    </h3>
+                    <p className="text-gray-500 text-sm max-w-md mx-auto">
+                      Una vez que subas tu XML y PDF, extraeremos automáticamente los datos de tu factura usando inteligencia artificial.
                     </p>
                   </div>
-                )}
-
-                {/* Confirmation Checkbox */}
-                <div className={`flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                  isConfirmed 
-                    ? 'bg-partrunner-yellow/10 border-partrunner-yellow/30 dark:bg-partrunner-yellow/5' 
-                    : 'bg-gray-50 dark:bg-partrunner-black/30 border-gray-200 dark:border-partrunner-gray-dark hover:border-partrunner-yellow/30'
-                }`}
-                onClick={toggleConfirmation}
-                >
-                  <button 
-                    type="button"
-                    className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
-                      isConfirmed 
-                        ? 'bg-partrunner-yellow border-partrunner-yellow' 
-                        : 'bg-white dark:bg-partrunner-charcoal border-gray-300 dark:border-partrunner-gray-dark'
-                    }`}
-                  >
-                    {isConfirmed && <Check size={14} className="text-partrunner-black" strokeWidth={3} />}
-                  </button>
-                  <label className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none leading-relaxed">
-                    Confirmo que he revisado la información extraída (conceptos, montos, RFC y proyecto) y es correcta para su procesamiento.
-                  </label>
-                </div>
-
-                {/* Submit Result Message */}
-                {submitResult && (
-                  <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-3 ${
-                    submitResult.success 
-                      ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30' 
-                      : 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/30'
-                  }`}>
-                    {submitResult.success ? <Check size={18} /> : <AlertTriangle size={18} />}
-                    {submitResult.message}
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-2">
-                  <button 
-                    type="button" 
-                    className="btn-ghost flex items-center gap-2"
-                    onClick={() => window.open('https://wa.me/5215644443529?text=Necesito ayuda con mi factura', '_blank')}
-                  >
-                    <HelpCircle size={18} />
-                    ¿Necesitas ayuda?
-                  </button>
-
-                  <button 
-                    type="submit" 
-                    disabled={!canSubmit}
-                    className={`
-                      font-bold text-lg py-4 px-10 rounded-xl shadow-lg transform transition-all duration-200 
-                      flex items-center gap-3 w-full md:w-auto justify-center
-                      ${canSubmit
-                        ? 'btn-primary hover:-translate-y-0.5' 
-                        : 'bg-gray-200 dark:bg-partrunner-gray-dark text-gray-400 dark:text-gray-500 cursor-not-allowed shadow-none'
-                      }
-                    `}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 size={22} className="animate-spin" />
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <Send size={22} />
-                        Enviar Factura
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+                )
+              )}
 
             </form>
           </div>

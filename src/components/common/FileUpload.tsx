@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, FileText, FileCode, X } from 'lucide-react';
+import { Upload, FileText, FileCode, X, CheckCircle } from 'lucide-react';
 import { formatFileSize } from '../../utils/files';
 
 interface FileUploadProps {
@@ -55,9 +55,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     onChange(null);
   };
 
+  const getIconColor = () => {
+    if (file) return iconType === 'xml' ? 'text-blue-600' : 'text-red-600';
+    if (isDragging) return 'text-partrunner-yellow';
+    return 'text-gray-400';
+  };
+
+  const getIconBgColor = () => {
+    if (file) return iconType === 'xml' ? 'bg-blue-100' : 'bg-red-100';
+    if (isDragging) return 'bg-partrunner-yellow/20';
+    return 'bg-gray-100';
+  };
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-0.5">{label}</label>
+    <div className="flex flex-col gap-2">
+      <label className="text-sm font-semibold text-gray-700 ml-0.5">{label}</label>
       <div className="relative">
         <input
           type="file"
@@ -72,57 +84,74 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={`
-            flex items-center justify-between w-full p-4 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 
+            relative flex flex-col items-center justify-center w-full min-h-[140px] p-6 
+            border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 
             ${file 
-              ? 'border-green-400 dark:border-green-500/50 bg-green-50 dark:bg-green-500/10' 
+              ? 'border-green-400 bg-green-50' 
               : isDragging
                 ? 'border-partrunner-yellow bg-partrunner-yellow/5 scale-[1.02]'
-                : 'border-gray-200 dark:border-partrunner-gray-dark hover:border-partrunner-yellow/50 bg-gray-50 dark:bg-partrunner-black/30 hover:bg-white dark:hover:bg-partrunner-charcoal'
+                : 'border-gray-200 hover:border-partrunner-yellow/50 bg-gray-50 hover:bg-white'
             }
           `}
         >
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl transition-colors duration-200 ${
-              file 
-                ? 'bg-green-200 dark:bg-green-500/20 text-green-600 dark:text-green-400' 
-                : isDragging
-                  ? 'bg-partrunner-yellow/20 text-partrunner-yellow'
-                  : 'bg-gray-200 dark:bg-partrunner-gray-dark text-gray-500 dark:text-gray-400'
-            }`}>
-              {iconType === 'xml' ? <FileCode size={22} /> : <FileText size={22} />}
+          {/* Success indicator */}
+          {file && (
+            <div className="absolute top-3 right-3">
+              <CheckCircle className="w-5 h-5 text-green-500" />
             </div>
-            <div className="flex flex-col">
-              <span className={`text-sm font-medium truncate max-w-[180px] ${
-                file 
-                  ? 'text-green-700 dark:text-green-400' 
-                  : 'text-gray-600 dark:text-gray-400'
-              }`}>
-                {file ? file.name : 'Arrastra o haz clic...'}
-              </span>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {file ? formatFileSize(file.size) : `Archivo ${iconType.toUpperCase()}`}
-              </span>
-            </div>
+          )}
+
+          {/* Icon */}
+          <div className={`p-4 rounded-2xl transition-all duration-200 mb-3 ${getIconBgColor()}`}>
+            {iconType === 'xml' ? (
+              <FileCode size={32} className={getIconColor()} />
+            ) : (
+              <FileText size={32} className={getIconColor()} />
+            )}
           </div>
-          
+
+          {/* Text */}
           {file ? (
-            <button
-              onClick={handleRemove}
-              className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 text-green-500 hover:text-red-500 dark:hover:text-red-400 transition-colors duration-200"
-              title="Eliminar archivo"
-            >
-              <X size={18} />
-            </button>
+            <div className="text-center">
+              <p className="text-green-700 font-semibold truncate max-w-[200px]">
+                {file.name}
+              </p>
+              <p className="text-green-600/70 text-sm mt-1">
+                {formatFileSize(file.size)}
+              </p>
+            </div>
           ) : (
-            <div className={`p-2 rounded-lg transition-colors duration-200 ${
-              isDragging 
-                ? 'bg-partrunner-yellow/20 text-partrunner-yellow' 
-                : 'text-gray-400 dark:text-gray-500'
-            }`}>
-              <Upload size={20} />
+            <div className="text-center">
+              <p className={`font-medium ${isDragging ? 'text-partrunner-yellow-dark' : 'text-gray-600'}`}>
+                {isDragging ? 'Suelta el archivo aquí' : 'Arrastra tu archivo aquí'}
+              </p>
+              <p className="text-gray-400 text-sm mt-1">
+                o haz clic para seleccionar
+              </p>
+              <p className="text-gray-300 text-xs mt-2 uppercase">
+                Archivo {iconType.toUpperCase()}
+              </p>
+            </div>
+          )}
+
+          {/* Upload icon indicator */}
+          {!file && !isDragging && (
+            <div className="absolute bottom-3 right-3 p-2 rounded-lg bg-white border border-gray-200">
+              <Upload size={16} className="text-gray-400" />
             </div>
           )}
         </label>
+
+        {/* Remove button */}
+        {file && (
+          <button
+            onClick={handleRemove}
+            className="absolute -top-2 -right-2 p-1.5 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-red-50 hover:border-red-200 text-gray-400 hover:text-red-500 transition-all duration-200"
+            title="Eliminar archivo"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
     </div>
   );

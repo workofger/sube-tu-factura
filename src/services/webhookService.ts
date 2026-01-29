@@ -53,8 +53,8 @@ export const buildWebhookPayload = async (formData: InvoiceData): Promise<Webhoo
 
     // Issuer (Emisor)
     issuer: {
-      rfc: formData.rfc,
-      name: formData.billerName,
+      rfc: formData.issuerRfc,
+      name: formData.issuerName,
       regime: formData.issuerRegime,
       zipCode: formData.issuerZipCode,
     },
@@ -270,10 +270,10 @@ export const validateFormData = (formData: InvoiceData): { valid: boolean; error
   }
 
   // Required fields
-  if (!formData.rfc) {
+  if (!formData.issuerRfc) {
     errors.push('El RFC del emisor es requerido');
   }
-  if (!formData.billerName) {
+  if (!formData.issuerName) {
     errors.push('El nombre del emisor es requerido');
   }
   if (!formData.uuid) {

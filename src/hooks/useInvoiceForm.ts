@@ -7,12 +7,13 @@ const initialFormData: InvoiceData = {
   expectedWeek: 0,
   weekFromDescription: undefined,
   project: ProjectType.MERCADO_LIBRE,
+  needsProjectReview: false,
   // Late invoice fields
   isLate: false,
   lateReasons: [],
   lateAcknowledged: false,
-  rfc: '',
-  billerName: '',
+  issuerRfc: '',
+  issuerName: '',
   issuerRegime: '',
   issuerZipCode: '',
   receiverRfc: '',
@@ -170,9 +171,9 @@ export const useInvoiceForm = () => {
     const feeAmount = total * PRONTO_PAGO_FEE_RATE;
     const netAmount = total - feeAmount;
     return {
+      originalAmount: total,
       feeAmount: Math.round(feeAmount * 100) / 100,
       netAmount: Math.round(netAmount * 100) / 100,
-      standardAmount: total,
     };
   }, [formData.totalAmount]);
 

@@ -16,47 +16,39 @@ interface AlertPopupProps {
 const alertConfig = {
   error: {
     icon: XCircle,
-    bgLight: 'bg-red-50',
-    bgDark: 'dark:bg-red-500/10',
-    borderLight: 'border-red-200',
-    borderDark: 'dark:border-red-500/30',
-    iconColor: 'text-red-500 dark:text-red-400',
-    titleColor: 'text-red-800 dark:text-red-300',
-    messageColor: 'text-red-700 dark:text-red-400',
-    buttonBg: 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    iconColor: 'text-red-500',
+    titleColor: 'text-red-800',
+    messageColor: 'text-red-700',
+    buttonBg: 'bg-red-600 hover:bg-red-700',
   },
   warning: {
     icon: AlertTriangle,
-    bgLight: 'bg-amber-50',
-    bgDark: 'dark:bg-amber-500/10',
-    borderLight: 'border-amber-200',
-    borderDark: 'dark:border-amber-500/30',
-    iconColor: 'text-amber-500 dark:text-amber-400',
-    titleColor: 'text-amber-800 dark:text-amber-300',
-    messageColor: 'text-amber-700 dark:text-amber-400',
-    buttonBg: 'bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    iconColor: 'text-amber-500',
+    titleColor: 'text-amber-800',
+    messageColor: 'text-amber-700',
+    buttonBg: 'bg-amber-600 hover:bg-amber-700',
   },
   success: {
     icon: CheckCircle,
-    bgLight: 'bg-green-50',
-    bgDark: 'dark:bg-green-500/10',
-    borderLight: 'border-green-200',
-    borderDark: 'dark:border-green-500/30',
-    iconColor: 'text-green-500 dark:text-green-400',
-    titleColor: 'text-green-800 dark:text-green-300',
-    messageColor: 'text-green-700 dark:text-green-400',
-    buttonBg: 'bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600',
+    bg: 'bg-green-50',
+    border: 'border-green-200',
+    iconColor: 'text-green-500',
+    titleColor: 'text-green-800',
+    messageColor: 'text-green-700',
+    buttonBg: 'bg-green-600 hover:bg-green-700',
   },
   info: {
     icon: Info,
-    bgLight: 'bg-blue-50',
-    bgDark: 'dark:bg-blue-500/10',
-    borderLight: 'border-blue-200',
-    borderDark: 'dark:border-blue-500/30',
-    iconColor: 'text-blue-500 dark:text-blue-400',
-    titleColor: 'text-blue-800 dark:text-blue-300',
-    messageColor: 'text-blue-700 dark:text-blue-400',
-    buttonBg: 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    iconColor: 'text-blue-500',
+    titleColor: 'text-blue-800',
+    messageColor: 'text-blue-700',
+    buttonBg: 'bg-blue-600 hover:bg-blue-700',
   },
 };
 
@@ -86,15 +78,15 @@ export const AlertPopup: React.FC<AlertPopupProps> = ({
       <div 
         className={`
           relative z-10 w-full max-w-md
-          ${config.bgLight} ${config.bgDark} ${config.borderLight} ${config.borderDark} border-2
-          rounded-2xl shadow-2xl dark:shadow-black/30
+          ${config.bg} ${config.border} border-2
+          rounded-2xl shadow-2xl
           transform transition-all duration-200 animate-scale-in
         `}
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-black/5"
         >
           <X className="w-5 h-5" />
         </button>
@@ -114,8 +106,8 @@ export const AlertPopup: React.FC<AlertPopupProps> = ({
                 {message}
               </p>
               {details && (
-                <div className="mt-3 p-3 bg-white/50 dark:bg-black/20 rounded-xl border border-white/80 dark:border-white/10">
-                  <code className="text-xs text-gray-600 dark:text-gray-400 break-all whitespace-pre-wrap">
+                <div className="mt-3 p-3 bg-white/70 rounded-xl border border-white/80">
+                  <code className="text-xs text-gray-600 break-all whitespace-pre-wrap">
                     {details}
                   </code>
                 </div>

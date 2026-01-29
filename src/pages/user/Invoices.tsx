@@ -7,6 +7,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Zap,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import UserLayout from '../../components/user/UserLayout';
 import { getUserInvoices, InvoicesResponse } from '../../services/userService';
@@ -50,11 +53,11 @@ const UserInvoices: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string; label: string }> = {
-      pending_review: { bg: 'bg-amber-500/20', text: 'text-amber-400', label: 'En revisión' },
-      approved: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Aprobada' },
-      pending_payment: { bg: 'bg-purple-500/20', text: 'text-purple-400', label: 'Por pagar' },
-      paid: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: 'Pagada' },
-      rejected: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Rechazada' },
+      pending_review: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'En revisión' },
+      approved: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Aprobada' },
+      pending_payment: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Por pagar' },
+      paid: { bg: 'bg-green-100', text: 'text-green-700', label: 'Pagada' },
+      rejected: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rechazada' },
     };
 
     const style = styles[status] || styles.pending_review;
@@ -68,7 +71,8 @@ const UserInvoices: React.FC = () => {
   const getProgramBadge = (program: string) => {
     if (program === 'pronto_pago') {
       return (
-        <span className="px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700 font-medium">
+          <Zap className="w-3 h-3" />
           Pronto Pago
         </span>
       );
@@ -90,32 +94,32 @@ const UserInvoices: React.FC = () => {
     <UserLayout>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Mis Facturas</h1>
-        <p className="text-slate-400">Consulta el estado de todas tus facturas</p>
+        <h1 className="text-2xl font-bold text-partrunner-black mb-2">Mis Facturas</h1>
+        <p className="text-gray-500">Consulta el estado de todas tus facturas</p>
       </div>
 
       {/* Summary Cards */}
       {data?.summary && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700/50 p-4">
-            <p className="text-slate-400 text-sm">Total Facturas</p>
-            <p className="text-xl font-bold text-white">{data.total}</p>
+          <div className="bg-white rounded-xl border border-partrunner-gray-light p-4">
+            <p className="text-gray-500 text-sm">Total Facturas</p>
+            <p className="text-xl font-bold text-partrunner-black">{data.total}</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700/50 p-4">
-            <p className="text-slate-400 text-sm">Total Facturado</p>
-            <p className="text-xl font-bold text-emerald-400">
+          <div className="bg-white rounded-xl border border-partrunner-gray-light p-4">
+            <p className="text-gray-500 text-sm">Total Facturado</p>
+            <p className="text-xl font-bold text-green-600">
               {formatCurrency(data.summary.total_facturado)}
             </p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700/50 p-4">
-            <p className="text-slate-400 text-sm">Pendiente</p>
-            <p className="text-xl font-bold text-amber-400">
+          <div className="bg-white rounded-xl border border-partrunner-gray-light p-4">
+            <p className="text-gray-500 text-sm">Pendiente</p>
+            <p className="text-xl font-bold text-amber-600">
               {formatCurrency(data.summary.total_pendiente)}
             </p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700/50 p-4">
-            <p className="text-slate-400 text-sm">Pagado</p>
-            <p className="text-xl font-bold text-blue-400">
+          <div className="bg-white rounded-xl border border-partrunner-gray-light p-4">
+            <p className="text-gray-500 text-sm">Pagado</p>
+            <p className="text-xl font-bold text-blue-600">
               {formatCurrency(data.summary.total_pagado)}
             </p>
           </div>
@@ -123,30 +127,30 @@ const UserInvoices: React.FC = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl border border-slate-700/50 p-4 mb-6">
+      <div className="bg-white rounded-xl border border-partrunner-gray-light p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar por UUID, folio, proyecto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
             />
           </div>
 
           {/* Status Filter */}
           <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-slate-500" />
+            <Filter className="w-5 h-5 text-gray-400" />
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-3 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              className="px-3 py-2.5 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
             >
               <option value="">Todos los estados</option>
               <option value="pending_review">En revisión</option>
@@ -164,7 +168,7 @@ const UserInvoices: React.FC = () => {
               setYearFilter(parseInt(e.target.value, 10));
               setPage(1);
             }}
-            className="px-3 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            className="px-3 py-2.5 bg-gray-50 border border-partrunner-gray-light rounded-xl text-partrunner-black focus:outline-none focus:ring-2 focus:ring-partrunner-yellow/50 focus:border-partrunner-yellow"
           >
             <option value={currentYear}>{currentYear}</option>
             <option value={currentYear - 1}>{currentYear - 1}</option>
@@ -173,38 +177,41 @@ const UserInvoices: React.FC = () => {
       </div>
 
       {/* Invoices Table */}
-      <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-partrunner-gray-light overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-partrunner-yellow animate-spin" />
           </div>
         ) : !filteredInvoices || filteredInvoices.length === 0 ? (
           <div className="text-center py-20">
-            <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-500">No se encontraron facturas</p>
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500">No se encontraron facturas</p>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-700/50">
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-400">
+                  <tr className="border-b border-partrunner-gray-light bg-gray-50">
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-500">
                       Factura
                     </th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-400">
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-500">
                       Fecha
                     </th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-400">
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-500">
                       Proyecto
                     </th>
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-slate-400">
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-500">
                       Semana
                     </th>
-                    <th className="text-right px-6 py-4 text-sm font-semibold text-slate-400">
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-gray-500">
                       Monto
                     </th>
-                    <th className="text-center px-6 py-4 text-sm font-semibold text-slate-400">
+                    <th className="text-center px-6 py-4 text-sm font-semibold text-gray-500">
                       Estado
                     </th>
                   </tr>
@@ -213,25 +220,46 @@ const UserInvoices: React.FC = () => {
                   {filteredInvoices.map((invoice) => (
                     <tr
                       key={invoice.id}
-                      className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors"
+                      className={`border-b border-partrunner-gray-light hover:bg-gray-50 transition-colors ${
+                        invoice.is_late ? 'bg-orange-50/50' : ''
+                      }`}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-slate-400" />
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                            invoice.is_late 
+                              ? 'bg-orange-100' 
+                              : invoice.payment_program === 'pronto_pago'
+                                ? 'bg-amber-100'
+                                : 'bg-gray-100'
+                          }`}>
+                            {invoice.is_late ? (
+                              <AlertTriangle className="w-5 h-5 text-orange-600" />
+                            ) : invoice.payment_program === 'pronto_pago' ? (
+                              <Zap className="w-5 h-5 text-amber-600" />
+                            ) : (
+                              <FileText className="w-5 h-5 text-gray-500" />
+                            )}
                           </div>
                           <div>
-                            <p className="text-white font-medium">
-                              {invoice.folio || invoice.uuid.substring(0, 8)}
-                            </p>
-                            <p className="text-slate-500 text-xs font-mono">
+                            <div className="flex items-center gap-2">
+                              <p className="text-partrunner-black font-medium">
+                                {invoice.folio || invoice.uuid.substring(0, 8)}
+                              </p>
+                              {invoice.is_late && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full font-medium">
+                                  EXTEMP.
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-400 text-xs font-mono">
                               {invoice.uuid.substring(0, 20)}...
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-slate-400">
+                        <div className="flex items-center gap-2 text-gray-600">
                           <Calendar className="w-4 h-4" />
                           {new Date(invoice.invoice_date).toLocaleDateString('es-MX', {
                             day: '2-digit',
@@ -241,22 +269,22 @@ const UserInvoices: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-slate-300">
+                        <span className="text-partrunner-black">
                           {invoice.project_name || '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-slate-400">
+                        <span className="text-gray-600">
                           Sem {invoice.payment_week}/{invoice.payment_year}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div>
-                          <p className="text-white font-semibold">
+                          <p className="text-partrunner-black font-semibold">
                             {formatCurrency(invoice.net_payment_amount || invoice.total_amount)}
                           </p>
                           {invoice.payment_program === 'pronto_pago' && invoice.pronto_pago_fee_amount && (
-                            <p className="text-slate-500 text-xs">
+                            <p className="text-gray-400 text-xs">
                               -{formatCurrency(invoice.pronto_pago_fee_amount)} fee
                             </p>
                           )}
@@ -272,29 +300,90 @@ const UserInvoices: React.FC = () => {
               </table>
             </div>
 
+            {/* Mobile Cards */}
+            <div className="lg:hidden divide-y divide-partrunner-gray-light">
+              {filteredInvoices.map((invoice) => (
+                <div 
+                  key={invoice.id} 
+                  className={`p-4 ${invoice.is_late ? 'bg-orange-50/50' : ''}`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        invoice.is_late 
+                          ? 'bg-orange-100' 
+                          : invoice.payment_program === 'pronto_pago'
+                            ? 'bg-amber-100'
+                            : 'bg-gray-100'
+                      }`}>
+                        {invoice.is_late ? (
+                          <AlertTriangle className="w-5 h-5 text-orange-600" />
+                        ) : invoice.payment_program === 'pronto_pago' ? (
+                          <Zap className="w-5 h-5 text-amber-600" />
+                        ) : (
+                          <FileText className="w-5 h-5 text-gray-500" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-partrunner-black font-medium">
+                            {invoice.folio || invoice.uuid.substring(0, 8)}
+                          </p>
+                          {invoice.is_late && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full font-medium">
+                              EXTEMP.
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-400 text-xs">
+                          {invoice.project_name || 'Sin proyecto'}
+                        </p>
+                      </div>
+                    </div>
+                    {getStatusBadge(invoice.status)}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(invoice.invoice_date).toLocaleDateString('es-MX', {
+                        day: '2-digit',
+                        month: 'short',
+                      })}
+                      <span>•</span>
+                      <Clock className="w-4 h-4" />
+                      Sem {invoice.payment_week}
+                    </div>
+                    <p className="text-partrunner-black font-semibold">
+                      {formatCurrency(invoice.net_payment_amount || invoice.total_amount)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Pagination */}
             {data && data.totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700/50">
-                <p className="text-slate-400 text-sm">
+              <div className="flex items-center justify-between px-6 py-4 border-t border-partrunner-gray-light">
+                <p className="text-gray-500 text-sm">
                   Mostrando {filteredInvoices?.length || 0} de {data.total} facturas
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPage(Math.max(1, page - 1))}
                     disabled={page === 1}
-                    className="p-2 rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    <ChevronLeft className="w-5 h-5 text-slate-400" />
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
                   </button>
-                  <span className="text-slate-400">
+                  <span className="text-partrunner-black font-medium">
                     {page} / {data.totalPages}
                   </span>
                   <button
                     onClick={() => setPage(Math.min(data.totalPages, page + 1))}
                     disabled={page === data.totalPages}
-                    className="p-2 rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    <ChevronRight className="w-5 h-5 text-slate-400" />
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
               </div>

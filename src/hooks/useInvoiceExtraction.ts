@@ -206,8 +206,8 @@ export const useInvoiceExtraction = ({
         return {
           ...prev,
           // Issuer
-          rfc: data.rfc || prev.rfc,
-          billerName: data.billerName || prev.billerName,
+          issuerRfc: data.issuerRfc || prev.issuerRfc,
+          issuerName: data.issuerName || prev.issuerName,
           issuerRegime: data.issuerRegime || prev.issuerRegime,
           issuerZipCode: data.issuerZipCode || prev.issuerZipCode,
           
