@@ -226,24 +226,28 @@ export const createOrganization = async (
     
     console.log('✅ Organization created:', organization.id);
     
-    // Upload CSD certificate
+    // Upload CSD certificate - SDK requires separate parameters, not an object
     console.log('📤 Uploading CSD certificate...');
-    const certificate = await client.organizations.uploadCertificate(organization.id, {
-      cer: csdData.cerFile,
-      key: csdData.keyFile,
-      password: csdData.password,
-    });
+    const cerBuffer = Buffer.from(csdData.cerFile, 'base64');
+    const keyBuffer = Buffer.from(csdData.keyFile, 'base64');
     
-    console.log('✅ CSD uploaded successfully. Serial:', certificate.serial_number);
+    const updatedOrg = await client.organizations.uploadCertificate(
+      organization.id,
+      cerBuffer,
+      keyBuffer,
+      csdData.password
+    );
+    
+    console.log('✅ CSD uploaded successfully. Serial:', updatedOrg.certificate?.serial_number);
     
     return {
       id: organization.id,
-      legal_name: organization.legal_name,
-      tax_id: organization.tax_id,
-      certificate: {
-        expires_at: certificate.expires_at,
-        serial_number: certificate.serial_number,
-      },
+      legal_name: updatedOrg.legal?.legal_name || orgData.legal_name,
+      tax_id: updatedOrg.legal?.tax_id || orgData.tax_id,
+      certificate: updatedOrg.certificate?.expires_at ? {
+        expires_at: updatedOrg.certificate.expires_at.toString(),
+        serial_number: updatedOrg.certificate.serial_number || '',
+      } : undefined,
     };
   } catch (error) {
     console.error('❌ Failed to create organization:', error);
@@ -270,17 +274,22 @@ export const updateOrganizationCSD = async (
   
   console.log('📤 Updating CSD for organization:', organizationId);
   
-  const certificate = await client.organizations.uploadCertificate(organizationId, {
-    cer: csdData.cerFile,
-    key: csdData.keyFile,
-    password: csdData.password,
-  });
+  // SDK requires separate parameters, not an object
+  const cerBuffer = Buffer.from(csdData.cerFile, 'base64');
+  const keyBuffer = Buffer.from(csdData.keyFile, 'base64');
   
-  console.log('✅ CSD updated. New serial:', certificate.serial_number);
+  const updatedOrg = await client.organizations.uploadCertificate(
+    organizationId,
+    cerBuffer,
+    keyBuffer,
+    csdData.password
+  );
   
-    return {
-    expires_at: certificate.expires_at,
-    serial_number: certificate.serial_number,
+  console.log('✅ CSD updated. New serial:', updatedOrg.certificate?.serial_number);
+  
+  return {
+    expires_at: updatedOrg.certificate?.expires_at?.toString() || '',
+    serial_number: updatedOrg.certificate?.serial_number || '',
   };
 };
 
@@ -307,9 +316,6 @@ export const createIncomeInvoice = async (
   const client = getFacturapiClient();
   
   console.log('📝 Creating income invoice for org:', organizationId);
-  
-  // Use the organization's API key context
-  const orgClient = new Facturapi(process.env.FACTURAPI_API_KEY || '');
   
   const invoice = await client.invoices.create(invoiceData, {
     headers: {
@@ -606,3 +612,4 @@ export const getCancellationReasonDescription = (motive: string): string => {
   };
   return reasons[motive] || 'Motivo desconocido';
 };
+
